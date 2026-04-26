@@ -4,7 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "migrate": "knex migrate:latest --knexfile src/config/database.ts",
+    "migrate:rollback": "knex migrate:rollback --knexfile src/config/database.ts"
   },
   "repository": {
     "type": "git",
