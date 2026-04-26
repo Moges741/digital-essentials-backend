@@ -5,7 +5,7 @@ export async function up(knex: Knex): Promise<void> {
     table.increments('enrollment_id').unsigned().primary();
     table.integer('user_id').unsigned().notNullable();
     table.integer('course_id').unsigned().notNullable();
-    table.date('enrollment_date').notNullable().defaultTo(knex.fn.now());
+    table.dateTime('enrollment_date').notNullable().defaultTo(knex.fn.now());
     table.enum('status', ['active', 'completed', 'dropped'])
          .notNullable()
          .defaultTo('active');

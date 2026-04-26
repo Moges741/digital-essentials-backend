@@ -1,11 +1,10 @@
 import app from './app';
 import { env } from './config/env';
-import db from './config/database';
+import db from './config/db';
 
 const startServer = async (): Promise<void> => {
   try {
-    // Test database connection before starting
-    await db.raw('SELECT 1');
+    await db.raw('SELECT 1 + 1 AS result');
     console.log('✅ Database connected successfully');
 
     app.listen(env.app.port, () => {
