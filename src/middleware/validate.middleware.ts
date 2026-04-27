@@ -10,8 +10,6 @@ export const validate = (
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    // Return all validation errors at once
-    // so the client knows everything wrong in one response
     sendError(
       res,
       'Validation failed',
