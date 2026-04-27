@@ -59,7 +59,8 @@ export const getCourseController = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const course_id = parseInt(req.params.course_id, 10);
+    const course_idParam = req.params.course_id;
+    const course_id = parseInt(Array.isArray(course_idParam) ? course_idParam[0] : course_idParam, 10);
     const course = await getCourseService(course_id, req.user);
     sendSuccess(res, { course }, 'Course retrieved successfully');
   } catch (error) {
@@ -78,7 +79,8 @@ export const updateCourseController = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const course_id = parseInt(req.params.course_id, 10);
+    const course_idParam = req.params.course_id;
+    const course_id = parseInt(Array.isArray(course_idParam) ? course_idParam[0] : course_idParam, 10);
     const course = await updateCourseService(
       course_id,
       req.body as UpdateCourseBody,
@@ -101,7 +103,8 @@ export const publishCourseController = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const course_id  = parseInt(req.params.course_id, 10);
+    const course_idParam = req.params.course_id;
+    const course_id = parseInt(Array.isArray(course_idParam) ? course_idParam[0] : course_idParam, 10);
     const is_published = req.body.is_published as boolean;
     const course = await publishCourseService(course_id, is_published, req.user!);
     const message = is_published ? 'Course published' : 'Course unpublished';
@@ -122,7 +125,8 @@ export const deleteCourseController = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const course_id = parseInt(req.params.course_id, 10);
+    const course_idParam = req.params.course_id;
+    const course_id = parseInt(Array.isArray(course_idParam) ? course_idParam[0] : course_idParam, 10);
     await deleteCourseService(course_id, req.user!);
     sendSuccess(res, null, 'Course deleted successfully');
   } catch (error) {
