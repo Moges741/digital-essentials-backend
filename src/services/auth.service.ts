@@ -57,3 +57,48 @@ export const registerUser = async (body: RegisterBody): Promise<SafeUser> => {
     return user!;
 
 }
+
+
+// ─── LOGIN ─────
+export const loginUser = async (body: LoginBody): Promise<AuthResponse> => {
+
+  const { email, password } = body;
+
+  const user = await findUserByEmail(email);
+
+  
+  if (!user) {
+    throw new UnauthorizedError('Invalid email or password');
+  }
+
+  if (!user.is_active) {
+    throw new UnauthorizedError('Your account has been deactivated');
+  }
+
+  const passwordMatch = await bcrypt.compare(password, user.password_hash);
+  if (!passwordMatch) {
+    throw new UnauthorizedError('Invalid email or password');
+  }
+
+  const payload: JwtPayload = {
+    user_id: user.user_id,
+    email:   user.email,
+    role:    user.role,
+  };
+
+  const token = jwt.sign(payload, env.jwt.secret, {
+    expiresIn: env.jwt.expiresIn as jwt.SignOptions['expiresIn'],
+  });
+
+  const safeUser: SafeUser = {
+    user_id:    user.user_id,
+    name:       user.name,
+    email:      user.email,
+    role:       user.role,
+    is_active:  user.is_active,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
+  };
+
+  return { user: safeUser, token };
+};
