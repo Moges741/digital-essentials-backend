@@ -1,14 +1,14 @@
 import db from '../config/db';
 import { User, SafeUser } from '../types/auth.types';
 
-// ─── Find user by email ───────────────────────────────────────
+// ─── Find user by email ──────────────
 export const findUserByEmail = async (email: string): Promise<User | undefined> => {
   return db('users')
     .where({ email })
     .first();
 };
 
-// ─── Find user by ID ──────────────────────────────────────────
+// ─── Find user by ID ────────────────
 export const findUserById = async (user_id: number): Promise<SafeUser | undefined> => {
   return db('users')
     .where({ user_id })
@@ -24,7 +24,7 @@ export const findUserById = async (user_id: number): Promise<SafeUser | undefine
     .first();
 };
 
-// ─── Create user ──────────────────────────────────────────────
+// ─── Create user ───────────────────
 export const createUser = async (userData: {
   name: string;
   email: string;
@@ -35,15 +35,15 @@ export const createUser = async (userData: {
   return user_id;
 };
 
-// ─── Create learner profile ───────────────────────────────────
+// ─── Create learner profile ──────────────
 export const createLearnerProfile = async (user_id: number): Promise<void> => {
   await db('learner_profiles').insert({
     user_id,
-    skill_level: 'beginner',  // default from your document
+    skill_level: 'beginner', 
   });
 };
 
-// ─── Create mentor profile ────────────────────────────────────
+// ─── Create mentor profile ─────────────
 export const createMentorProfile = async (
   user_id: number,
   specialization: string,
@@ -56,7 +56,7 @@ export const createMentorProfile = async (
   });
 };
 
-// ─── Check if email exists ────────────────────────────────────
+// ─── Check if email exists ────────────
 export const emailExists = async (email: string): Promise<boolean> => {
   const result = await db('users')
     .where({ email })
