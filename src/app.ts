@@ -17,14 +17,14 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-// ── Routes (we add these as we build each module) ─────────
-app.use('/api/auth',        authRoutes);
+// ── Routes (we add these as we build each module)
+app.use('/api/auth',      authRoutes);
 // app.use('/api/courses',     courseRoutes);
 // app.use('/api/enrollments', enrollmentRoutes);
 // app.use('/api/progress',    progressRoutes);
 // app.use('/api/forum',       forumRoutes);
 
-// ── 404 handler ───────────────────────────────────────────
+// ── 404 handler ──────
 app.use((_req: Request, res: Response) => {
   sendError(res, 'Route not found', 404);
 });
