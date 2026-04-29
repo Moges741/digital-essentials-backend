@@ -1,5 +1,3 @@
-// src/services/lesson.service.ts
-
 import {
   createLesson,
   findLessonById,
@@ -75,7 +73,7 @@ export const createLessonService = async (
   return lesson!;
 };
 
-// ─── LIST ─────────────────────────────────────────────────────
+// ─── LIST ───────────────────────────
 export const listLessonsService = async (
   course_id: number,
   user?: JwtPayload
@@ -129,7 +127,7 @@ export const getLessonService = async (
   return lesson!;
 };
 
-// ─── UPDATE ───────────────────────────────────────────────────
+// ─── UPDATE ─────────────────────────
 export const updateLessonService = async (
   course_id: number,
   lesson_id: number,
