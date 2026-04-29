@@ -78,7 +78,7 @@ export const listLessonsByCourse = async (
     .orderBy('lesson_order', 'asc');
 };
 
-// ─── Update lesson ────────────────────────────────────────────
+// ─── Update lesson ───────────────────────────
 export const updateLesson = async (
   lesson_id: number,
   data: UpdateLessonBody
