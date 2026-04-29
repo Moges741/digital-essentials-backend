@@ -3,6 +3,7 @@ import { AppError } from './utils/errors';
 import { sendError } from './utils/response';
 import authRoutes from './routes/auth.routes';
 import courseRoutes from './routes/course.routes';
+import lessonRoutes from './routes/lesson.routes';
 const app = express();
 
 // ── Body parsers ──────────────────────────────────────────
@@ -21,6 +22,7 @@ app.get('/health', (_req: Request, res: Response) => {
 // ── Routes (we add these as we build each module)
 app.use('/api/auth',      authRoutes);
 app.use('/api/courses',     courseRoutes);
+app.use('/api/courses/:course_id/lessons', lessonRoutes);
 // app.use('/api/enrollments', enrollmentRoutes);
 // app.use('/api/progress',    progressRoutes);
 // app.use('/api/forum',       forumRoutes);

@@ -1,5 +1,3 @@
-// src/models/lesson.model.ts
-
 import db from '../config/db';
 import {
   Lesson,
@@ -15,7 +13,6 @@ export const createLesson = async (
 ): Promise<number> => {
 
   // If no lesson_order provided, auto-assign next order number
-  // This prevents gaps and makes ordering predictable
   let lesson_order = data.lesson_order;
 
   if (!lesson_order) {
@@ -46,8 +43,7 @@ export const findLessonById = async (
 };
 
 // ─── Find lesson with materials ───────────────
-// Returns lesson + all its offline materials
-// Used for the single lesson detail view
+
 export const findLessonWithMaterials = async (
   lesson_id: number
 ): Promise<LessonWithMaterials | undefined> => {
@@ -96,7 +92,6 @@ export const deleteLesson = async (lesson_id: number): Promise<void> => {
 };
 
 // ─── Check lesson belongs to course ──────────────────────────
-// Safety check — prevents accessing lesson from wrong course
 export const lessonBelongsToCourse = async (
   lesson_id: number,
   course_id: number

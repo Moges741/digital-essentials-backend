@@ -1,121 +1,82 @@
-import { Request, Response, NextFunction } from 'express';
+// src/routes/lesson.routes.ts
+
+import { Router } from 'express';
+import { body, param } from 'express-validator';
 import {
-  createLessonService,
-  listLessonsService,
-  getLessonService,
-  updateLessonService,
-  deleteLessonService,
-} from '../services/lesson.service';
-import { sendSuccess, sendError } from '../utils/response';
-import { AppError } from '../utils/errors';
-import { CreateLessonBody, UpdateLessonBody } from '../types/lesson.types';
+  createLessonController,
+  listLessonsController,
+  getLessonController,
+  updateLessonController,
+  deleteLessonController,
+} from '../controllers/lesson.controller';
+import { authenticate, authorizeRoles } from '../middleware/auth.middleware';
+import { validate } from '../middleware/validate.middleware';
 
-// ─── Shared param parser ───────────────
-const parseCourseAndLesson = (req: Request) => ({
-  course_id: parseInt(Array.isArray(req.params.course_id) ? req.params.course_id[0] : req.params.course_id, 10),
-  lesson_id: parseInt(Array.isArray(req.params.lesson_id) ? req.params.lesson_id[0] : req.params.lesson_id, 10),
-});
+// mergeParams: true is CRITICAL here
 
-// ─── CREATE ─────────────────────────────
-export const createLessonController = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const course_id = parseInt(Array.isArray(req.params.course_id) ? req.params.course_id[0] : req.params.course_id, 10);
-    const lesson = await createLessonService(
-      course_id,
-      req.body as CreateLessonBody,
-      req.user!
-    );
-    sendSuccess(res, { lesson }, 'Lesson created successfully', 201);
-  } catch (error) {
-    if (error instanceof AppError) {
-      sendError(res, error.message, error.statusCode);
-    } else {
-      next(error);
-    }
-  }
-};
+const router = Router({ mergeParams: true });
 
-// ─── LIST ────────────────────────────
-export const listLessonsController = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const course_id = parseInt(Array.isArray(req.params.course_id) ? req.params.course_id[0] : req.params.course_id, 10);
-    const lessons = await listLessonsService(course_id, req.user);
-    sendSuccess(res, { lessons }, 'Lessons retrieved successfully');
-  } catch (error) {
-    if (error instanceof AppError) {
-      sendError(res, error.message, error.statusCode);
-    } else {
-      next(error);
-    }
-  }
-};
+// ── GET /api/courses/:course_id/lessons ───────────────────────
 
-// ─── GET ONE ───────────────────────────
-export const getLessonController = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { course_id, lesson_id } = parseCourseAndLesson(req);
-    const lesson = await getLessonService(course_id, lesson_id, req.user);
-    sendSuccess(res, { lesson }, 'Lesson retrieved successfully');
-  } catch (error) {
-    if (error instanceof AppError) {
-      sendError(res, error.message, error.statusCode);
-    } else {
-      next(error);
-    }
-  }
-};
+router.get('/', listLessonsController);
 
-// ─── UPDATE ────────────────────────────
-export const updateLessonController = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { course_id, lesson_id } = parseCourseAndLesson(req);
-    const lesson = await updateLessonService(
-      course_id,
-      lesson_id,
-      req.body as UpdateLessonBody,
-      req.user!
-    );
-    sendSuccess(res, { lesson }, 'Lesson updated successfully');
-  } catch (error) {
-    if (error instanceof AppError) {
-      sendError(res, error.message, error.statusCode);
-    } else {
-      next(error);
-    }
-  }
-};
+// ── GET /api/courses/:course_id/lessons/:lesson_id ────────────
+router.get(
+  '/:lesson_id',
+  [param('lesson_id').isInt({ min: 1 }).withMessage('Invalid lesson ID')],
+  validate,
+  getLessonController
+);
 
-// ─── DELETE ─────────────────────────
-export const deleteLessonController = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const { course_id, lesson_id } = parseCourseAndLesson(req);
-    await deleteLessonService(course_id, lesson_id, req.user!);
-    sendSuccess(res, null, 'Lesson deleted successfully');
-  } catch (error) {
-    if (error instanceof AppError) {
-      sendError(res, error.message, error.statusCode);
-    } else {
-      next(error);
-    }
-  }
-};
+// ── POST /api/courses/:course_id/lessons ──────────────────────
+router.post(
+  '/',
+  authenticate,
+  authorizeRoles('mentor', 'administrator'),
+  [
+    body('title')
+      .trim()
+      .notEmpty().withMessage('Title is required')
+      .isLength({ max: 200 }).withMessage('Title cannot exceed 200 characters'),
+    body('content')
+      .optional()
+      .trim(),
+    body('lesson_order')
+      .optional()
+      .isInt({ min: 1 }).withMessage('lesson_order must be a positive integer'),
+  ],
+  validate,
+  createLessonController
+);
+
+router.patch(
+  '/:lesson_id',
+  authenticate,
+  authorizeRoles('mentor', 'administrator'),
+  [
+    param('lesson_id').isInt({ min: 1 }).withMessage('Invalid lesson ID'),
+    body('title')
+      .optional()
+      .trim()
+      .isLength({ max: 200 }).withMessage('Title cannot exceed 200 characters'),
+    body('content')
+      .optional()
+      .trim(),
+    body('lesson_order')
+      .optional()
+      .isInt({ min: 1 }).withMessage('lesson_order must be a positive integer'),
+  ],
+  validate,
+  updateLessonController
+);
+
+router.delete(
+  '/:lesson_id',
+  authenticate,
+  authorizeRoles('mentor', 'administrator'),
+  [param('lesson_id').isInt({ min: 1 }).withMessage('Invalid lesson ID')],
+  validate,
+  deleteLessonController
+);
+
+export default router;
