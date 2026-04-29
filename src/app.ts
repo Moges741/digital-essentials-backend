@@ -4,13 +4,14 @@ import { sendError } from './utils/response';
 import authRoutes from './routes/auth.routes';
 import courseRoutes from './routes/course.routes';
 import lessonRoutes from './routes/lesson.routes';
+import enrollmentRoutes from './routes/enrollment.routes';
 const app = express();
 
-// ── Body parsers ──────────────────────────────────────────
+// ── Body parsers ───────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ── Health check ──────────────────────────────────────────
+// ── Health check ───────────────────────
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
@@ -23,7 +24,7 @@ app.get('/health', (_req: Request, res: Response) => {
 app.use('/api/auth',      authRoutes);
 app.use('/api/courses',     courseRoutes);
 app.use('/api/courses/:course_id/lessons', lessonRoutes);
-// app.use('/api/enrollments', enrollmentRoutes);
+app.use('/api/enrollments', enrollmentRoutes);
 // app.use('/api/progress',    progressRoutes);
 // app.use('/api/forum',       forumRoutes);
 
@@ -32,7 +33,7 @@ app.use((_req: Request, res: Response) => {
   sendError(res, 'Route not found', 404);
 });
 
-// ── Global error handler ──────────────────────────────────
+// ── Global error handler ────────────────────
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof AppError) {
     return sendError(res, err.message, err.statusCode);
