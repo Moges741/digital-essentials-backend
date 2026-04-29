@@ -71,8 +71,8 @@ export const listCourses = async (
   // Apply search if provided
   if (search) {
     baseQuery.where((qb) => {
-      qb.whereIlike('courses.title', `%${search}%`)
-        .orWhereIlike('courses.description', `%${search}%`);
+      qb.whereILike('courses.title', `%${search}%`)
+        .orWhereILike('courses.description', `%${search}%`);
     });
   }
 
@@ -118,8 +118,8 @@ export const listAllCourses = async (
 
   if (search) {
     baseQuery.where((qb) => {
-      qb.whereIlike('courses.title', `%${search}%`)
-        .orWhereIlike('courses.description', `%${search}%`);
+      qb.whereILike('courses.title', `%${search}%`)
+        .orWhereILike('courses.description', `%${search}%`);
     });
   }
 
