@@ -50,3 +50,24 @@ export const authorizeRoles = (...roles: string[]) => {
     next();
   };
 };
+
+export const optionalAuthenticate = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+
+    try {
+      const decoded = jwt.verify(token, env.jwt.secret) as JwtPayload;
+      req.user = decoded;
+    } catch (error) {
+      // If token is invalid or expired, we just ignore it and proceed without setting req.user
+    }
+  }
+
+  next();
+};

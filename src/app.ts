@@ -5,7 +5,7 @@ import authRoutes from './routes/auth.routes';
 import courseRoutes from './routes/course.routes';
 import lessonRoutes from './routes/lesson.routes';
 import enrollmentRoutes from './routes/enrollment.routes';
-import progressRoutes from './routes/progress.route';
+import progressRoutes from './routes/progress.routes';
 const app = express();
 
 // ── Body parsers ───────────────────────
