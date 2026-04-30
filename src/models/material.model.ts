@@ -1,5 +1,3 @@
-// src/models/material.model.ts
-
 import db from '../config/db';
 import { OfflineMaterial } from '../types/material.types';
 
