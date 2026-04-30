@@ -10,6 +10,9 @@ const requiredEnvVars = [
   'DB_PASSWORD',
   'JWT_SECRET',
   'PORT',
+  'CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET',
 ];
 
 for (const envVar of requiredEnvVars) {
@@ -27,11 +30,16 @@ export const env = {
     password: process.env.DB_PASSWORD as string,
   },
   jwt: {
-    secret:     process.env.JWT_SECRET as string,
-    expiresIn:  '7d',
+    secret:    process.env.JWT_SECRET as string,
+    expiresIn: '7d',
   },
   app: {
-    port:     parseInt(process.env.PORT as string, 10),
-    nodeEnv:  process.env.NODE_ENV as string,
+    port:    parseInt(process.env.PORT as string, 10),
+    nodeEnv: process.env.NODE_ENV as string,
+  },
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME as string,
+    apiKey:    process.env.CLOUDINARY_API_KEY as string,
+    apiSecret: process.env.CLOUDINARY_API_SECRET as string,
   },
 };
