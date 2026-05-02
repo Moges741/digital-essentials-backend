@@ -29,7 +29,7 @@ A RESTful API backend for a community digital literacy learning platform serving
 
 ## About the Project
 
-The platform closes the digital literacy gap in communities with limited technology exposure. It supports both online and offline learning modes with automatic sync, built as part of CBTP (Community Based Training Program) Phase II at Jimma Institute of Technology.
+The platform closes the digital literacy gap in communities with limited technology exposure. It supports both online and offline learning modes with automatic sync, built as part of CBTP (Community Based Training Program) Phase III at Jimma Institute of Technology.
 
 Three user roles are supported: learner, mentor, and administrator.
 
