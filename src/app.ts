@@ -6,13 +6,14 @@ import courseRoutes from './routes/course.routes';
 import lessonRoutes from './routes/lesson.routes';
 import enrollmentRoutes from './routes/enrollment.routes';
 import progressRoutes from './routes/progress.routes';
+import materialRoutes from './routes/material.routes';
 const app = express();
 
-// ── Body parsers ───────────────────────
+// ── Body parsers ─────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ── Health check ───────────────────────
+// ── Health check ─────────
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
@@ -27,6 +28,7 @@ app.use('/api/courses',     courseRoutes);
 app.use('/api/courses/:course_id/lessons', lessonRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/progress',    progressRoutes);
+app.use('/api/courses/:course_id/materials', materialRoutes);
 // app.use('/api/forum',       forumRoutes);
 
 // ── 404 handler ──────
