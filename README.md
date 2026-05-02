@@ -352,11 +352,6 @@ curl http://localhost:3000/health
 
 ---
 
-## License
-
-This project is licensed under the MIT License.
-
----
 
 ## Acknowledgements
 
@@ -364,4 +359,4 @@ This project is licensed under the MIT License.
 - Bosa Addis Kebele community
 - CBTP (Community Based Training Program) coordinators
 - Project Advisor: Mr. Yonas G
-- Team members: Ayida Aman, Lina Seid, Liya Tamerat, Maedot Wondesen, Marara Obsi, Mogos Sisay
+- Team members: MOGES(ME) Ayida Aman, Lina Seid, Liya Tamerat, Maedot Wondesen, Marara Obsi
