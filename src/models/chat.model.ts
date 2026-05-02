@@ -1,5 +1,5 @@
 import db from '../config/db'; 
-import { ChatMessage, ChatMessageResponse } from '../types/chat.types';
+import { DatabaseChatMessage, DatabaseChatMessageResponse } from '../types/chat.types';
 
 const TABLE = 'chat_messages';
 
@@ -9,7 +9,7 @@ export const saveMessage = async (
   message: string,
   sender: 'user' | 'ai',
   sessionId: string
-): Promise<ChatMessageResponse> => {
+): Promise<DatabaseChatMessageResponse> => {
   const [insertedId] = await db(TABLE).insert({
     user_id: userId,
     message,
@@ -19,9 +19,8 @@ export const saveMessage = async (
 
   // MySQL returns the auto-increment id; we need the full row
   const row = await db(TABLE)
-    .where({ user_id: userId, session_id: sessionId, sender })
-    .orderBy('created_at', 'desc')
-    .first<ChatMessage>();
+    .where({ message_id: insertedId })
+    .first<DatabaseChatMessage>();
 
   return {
     message_id: row.message_id,
@@ -38,7 +37,7 @@ export const getUserChatHistory = async (
   limit: number,
   offset: number,
   sessionId?: string
-): Promise<{ messages: ChatMessageResponse[]; total: number }> => {
+): Promise<{ messages: DatabaseChatMessageResponse[]; total: number }> => {
   const baseQuery = db(TABLE).where({ user_id: userId });
 
   if (sessionId) {
@@ -58,7 +57,7 @@ export const getUserChatHistory = async (
     .offset(offset);
 
   return {
-    messages: rows as ChatMessageResponse[],
+    messages: rows as DatabaseChatMessageResponse[],
     total: Number(count),
   };
 };
@@ -68,12 +67,12 @@ export const getRecentMessages = async (
   userId: number,
   sessionId: string,
   limit: number = 10
-): Promise<ChatMessage[]> => {
+): Promise<DatabaseChatMessage[]> => {
   const rows = await db(TABLE)
     .where({ user_id: userId, session_id: sessionId })
     .orderBy('created_at', 'desc')
     .limit(limit)
-    .select<ChatMessage[]>();
+    .select<DatabaseChatMessage[]>();
 
   return rows.reverse(); 
 };

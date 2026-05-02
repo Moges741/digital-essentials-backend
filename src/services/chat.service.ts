@@ -16,7 +16,7 @@ import {
   SendMessageResponse,
   ChatHistoryResponse,
   GrokMessage,         // reuse this type — same shape
-  GrokChatRequest,
+  GroqChatRequest,
   GrokChatResponse,
 } from '../types/chat.types';
 import { AppError } from '../utils/errors';
@@ -26,7 +26,7 @@ import { AppError } from '../utils/errors';
  * Only the client instance and model name differ.
  */
 const callGroqAPI = async (messages: GrokMessage[]): Promise<string> => {
-  const payload: GrokChatRequest = {
+  const payload: GroqChatRequest = {
     model: GROQ_MODEL,
     messages: [
       { role: 'system', content: CHAT_SYSTEM_PROMPT },
