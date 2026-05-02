@@ -15,7 +15,7 @@ import { upload }      from '../config/multer';
 
 const router = Router({ mergeParams: true });
 
-// ── GET /api/courses/:course_id/exercises ─────────────────────
+// ── GET /api/courses/:course_id/exercises ───────
 router.get(
   '/',
   authenticate,
@@ -39,7 +39,7 @@ router.get(
   getExerciseController
 );
 
-// ── POST /api/courses/:course_id/exercises ────────────────────
+// ── POST /api/courses/:course_id/exercises ───────
 router.post(
   '/',
   authenticate,
