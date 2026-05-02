@@ -8,6 +8,8 @@ import enrollmentRoutes from './routes/enrollment.routes';
 import progressRoutes from './routes/progress.routes';
 import materialRoutes from './routes/material.routes';
 import exerciseRoutes from './routes/exercise.routes';
+import feedbackRoutes from './routes/feedback.routes';
+import certificateRoutes from './routes/certificate.routes';
 const app = express();
 
 // ── Body parsers ─────────
@@ -31,6 +33,8 @@ app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/progress',    progressRoutes);
 app.use('/api/courses/:course_id/materials', materialRoutes);
 app.use('/api/courses/:course_id/exercises', exerciseRoutes);
+app.use('/api/feedback',    feedbackRoutes);
+app.use('/api/certificates', certificateRoutes);
 // app.use('/api/forum',       forumRoutes);
 
 // ── 404 handler ──────
