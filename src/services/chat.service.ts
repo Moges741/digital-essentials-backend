@@ -1,10 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
 import {
-  groqClient,           // renamed from grokClient
-  GROQ_MODEL,           // renamed from GROK_MODEL
+  groqClient,           
+  GROQ_MODEL,           
   DAILY_MESSAGE_LIMIT,
   CHAT_SYSTEM_PROMPT,
-} from '../config/groq'; // renamed from ../config/grok
+} from '../config/groq'; 
 import {
   saveMessage,
   getUserChatHistory,
@@ -15,16 +15,13 @@ import {
 import {
   SendMessageResponse,
   ChatHistoryResponse,
-  GrokMessage,         // reuse this type — same shape
+  GrokMessage,         
   GroqChatRequest,
   GrokChatResponse,
 } from '../types/chat.types';
 import { AppError } from '../utils/errors';
 
-/**
- * Call the Groq API — identical format to OpenAI/Grok.
- * Only the client instance and model name differ.
- */
+
 const callGroqAPI = async (messages: GrokMessage[]): Promise<string> => {
   const payload: GroqChatRequest = {
     model: GROQ_MODEL,

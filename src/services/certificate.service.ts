@@ -125,3 +125,22 @@ export const deleteCertificateService = async (
 
   await deleteCertificate(certificate_id);
 };
+export const generateCertificateService = async (
+  user_id: number,
+  course_id: number
+): Promise<void> => {
+
+  // Don't generate if already exists
+  const existing = await findCertificateByUserAndCourse(user_id, course_id);
+  if (existing) return;
+
+  // Generate a simple certificate URL
+  // Format: cloudinary placeholder with user and course info
+  const certificate_url = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/digital-essentials/certificates/${user_id}_${course_id}`;
+
+  await createCertificate({
+    user_id,
+    course_id,
+    certificate_url,
+  });
+};

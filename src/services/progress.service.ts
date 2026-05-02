@@ -22,7 +22,7 @@ import {
   ForbiddenError,
   ValidationError,
 } from '../utils/errors';
-
+import { generateCertificateService } from './certificate.service';
 // ─── MARK LESSON COMPLETE (online) ──────────────────
 export const markCompleteService = async (
   lesson_id: number,
@@ -58,10 +58,16 @@ export const markCompleteService = async (
   // 5. Mark complete
   await markLessonComplete(user.user_id, lesson_id);
 
-  // 6. Check if ALL lessons in enrollment are now complete
+// 6. Check if ALL lessons in enrollment are now complete
   const allDone = await allLessonsComplete(enrollment.enrollment_id);
   if (allDone) {
+    // Mark enrollment as completed
     await updateEnrollmentStatus(enrollment.enrollment_id, 'completed');
+
+    // Auto-generate certificate
+    // From your document Section 3.3-C:
+    // "Users receive digital or printable certificates upon course completion"
+    await generateCertificateService(user.user_id, lesson.course_id);
   }
 };
 
@@ -120,9 +126,10 @@ export const syncOfflineProgressService = async (
       );
 
       // Check course completion after each sync
-      const allDone = await allLessonsComplete(enrollment.enrollment_id);
+    const allDone = await allLessonsComplete(enrollment.enrollment_id);
       if (allDone) {
         await updateEnrollmentStatus(enrollment.enrollment_id, 'completed');
+        await generateCertificateService(user.user_id, lesson.course_id);
       }
 
       result.synced.push(item.lesson_id);

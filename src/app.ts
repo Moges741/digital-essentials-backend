@@ -10,6 +10,7 @@ import materialRoutes from './routes/material.routes';
 import exerciseRoutes from './routes/exercise.routes';
 import feedbackRoutes from './routes/feedback.routes';
 import certificateRoutes from './routes/certificate.routes';
+import chatRoutes from './routes/chat.routes';
 const app = express();
 
 // ── Body parsers ─────────
@@ -35,6 +36,7 @@ app.use('/api/courses/:course_id/materials', materialRoutes);
 app.use('/api/courses/:course_id/exercises', exerciseRoutes);
 app.use('/api/feedback',    feedbackRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/chat',         chatRoutes);
 // app.use('/api/forum',       forumRoutes);
 
 // ── 404 handler ──────
