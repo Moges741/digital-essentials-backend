@@ -359,4 +359,4 @@ curl http://localhost:3000/health
 - Bosa Addis Kebele community
 - CBTP (Community Based Training Program) coordinators
 - Project Advisor: Mr. Yonas G
-- Team members: MOGES(ME) Ayida Aman, Lina Seid, Liya Tamerat, Maedot Wondesen, Marara Obsi
+- Team members: MOGES(ME), Ayida Aman, Lina Seid, Liya Tamerat, Maedot Wondesen, Marara Obsi
