@@ -6,6 +6,7 @@ export interface User {
   password_hash: string;
   role: 'learner' | 'mentor' | 'administrator';
   is_active: boolean;
+  google_id?: string; 
   created_at: Date;
   updated_at: Date;
 }

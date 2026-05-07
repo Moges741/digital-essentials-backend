@@ -4,6 +4,8 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 import { register, login } from '../controllers/auth.controller';
 import { validate } from '../middleware/validate.middleware';
+import { googleAuth, googleAuthCallback } from '../controllers/google-auth.controller';
+import passport from 'passport';
 
 const router = Router();
 
@@ -52,5 +54,9 @@ router.post(
   validate,
   login
 );
+// ─── GET /api/auth/google ───────────────────────────────────
+router.get('/google', googleAuth);
 
+// ─── GET /api/auth/google/callback ──────────────────────────
+router.get('/google/callback', passport.authenticate('google', { session: false }), googleAuthCallback);
 export default router;

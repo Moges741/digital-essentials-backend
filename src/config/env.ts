@@ -42,4 +42,9 @@ export const env = {
     apiKey:    process.env.CLOUDINARY_API_KEY as string,
     apiSecret: process.env.CLOUDINARY_API_SECRET as string,
   },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID!,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    redirectUrl: process.env.GOOGLE_REDIRECT_URL!,
+  },
 };

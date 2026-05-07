@@ -55,7 +55,19 @@ export const createMentorProfile = async (
     qualifications: qualifications ?? null,
   });
 };
+// ─── Find user by Google ID ──────────────
+export const findUserByGoogleId = async (google_id: string): Promise<User | undefined> => {
+  return db('users')
+    .where({ google_id })
+    .first();
+};
 
+// ─── Update user with Google ID ──────────
+export const updateUserGoogleId = async (user_id: number, google_id: string): Promise<void> => {
+  await db('users')
+    .where({ user_id })
+    .update({ google_id, updated_at: db.fn.now() });
+};
 // ─── Check if email exists ────────────
 export const emailExists = async (email: string): Promise<boolean> => {
   const result = await db('users')

@@ -12,7 +12,10 @@ import exerciseRoutes from './routes/exercise.routes';
 import feedbackRoutes from './routes/feedback.routes';
 import certificateRoutes from './routes/certificate.routes';
 import chatRoutes from './routes/chat.routes';
+import './config/passport'; 
+import passport from 'passport';
 const app = express();
+app.use(passport.initialize());
 app.use(
   cors({
     origin: 'http://localhost:5173',

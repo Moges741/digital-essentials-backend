@@ -27,7 +27,17 @@ import {
 } from '../utils/errors';
 
 // REGISTER
-
+export const generateToken = (user: SafeUser): string => {
+  const payload: JwtPayload = {
+    user_id: user.user_id,
+    email: user.email,
+    role: user.role,
+  };
+  return jwt.sign(payload, env.jwt.secret, {
+    expiresIn: env.jwt.expiresIn as jwt.SignOptions['expiresIn'],
+  });
+};
+  
 export const registerUser = async (body: RegisterBody): Promise<SafeUser> => {
     const {name, email, password , role, specialization, qualifications} = body;
     if(role === 'mentor' && !specialization) {
