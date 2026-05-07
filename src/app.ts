@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
 import { AppError } from './utils/errors';
 import { sendError } from './utils/response';
 import authRoutes from './routes/auth.routes';
@@ -12,7 +13,12 @@ import feedbackRoutes from './routes/feedback.routes';
 import certificateRoutes from './routes/certificate.routes';
 import chatRoutes from './routes/chat.routes';
 const app = express();
-
+app.use(
+  cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  })
+);
 // ── Body parsers ─────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
