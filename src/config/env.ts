@@ -47,4 +47,7 @@ export const env = {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     redirectUrl: process.env.GOOGLE_REDIRECT_URL!,
   },
+   resend: {
+    apiKey: process.env.RESEND_API_KEY!,
+  },
 };

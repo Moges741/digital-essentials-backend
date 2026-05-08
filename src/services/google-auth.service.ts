@@ -12,7 +12,8 @@ export const handleGoogleAuth = async (googleProfile: any): Promise<{ user: User
 
   if (user) {
     // Existing Google user
-    return { user, token: generateToken(user), isNewUser: false };
+    const authUser: User = { ...user, is_active: user.is_active ?? true, password_hash: user.password_hash ?? '' };
+    return { user: authUser, token: generateToken(authUser), isNewUser: false };
   }
 
   // Check if user exists by email (account linking)
@@ -23,7 +24,8 @@ export const handleGoogleAuth = async (googleProfile: any): Promise<{ user: User
     }
     // Link existing account
     await updateUserGoogleId(user.user_id, google_id);
-    return { user: { ...user, google_id }, token: generateToken(user), isNewUser: false };
+    const authUser: User = { ...user, google_id, is_active: user.is_active ?? true, password_hash: user.password_hash ?? '' };
+    return { user: authUser, token: generateToken(authUser), isNewUser: false };
   }
 
   // New user: create account

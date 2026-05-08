@@ -1,6 +1,9 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import {env} from '../config/env';
+// import { sendVerificationEmail } from './email.service';
+// import {  createVerificationToken, verifyTokenAndGetUser } from '../models/user.model';
+import crypto from 'crypto';
 
 import {
     emailExists,
@@ -8,7 +11,7 @@ import {
     createLearnerProfile,
     createMentorProfile,
     findUserByEmail,
-    findUserById
+    findUserByIdFull
 } from '../models/user.model';
 
 
@@ -23,13 +26,15 @@ import {
 import {
     ConflictError,
     ValidationError,
-    UnauthorizedError
+    UnauthorizedError,
+    NotFoundError
 } from '../utils/errors';
 
 // REGISTER
 export const generateToken = (user: SafeUser): string => {
   const payload: JwtPayload = {
     user_id: user.user_id,
+    name: user.name,
     email: user.email,
     role: user.role,
   };
@@ -62,10 +67,9 @@ export const registerUser = async (body: RegisterBody): Promise<SafeUser> => {
         await createMentorProfile(user_id, specialization!, qualifications);    
     }
 
-    const user = await findUserById(user_id);
+    const user = await findUserByIdFull(user_id);
 
     return user!;
-
 }
 
 
@@ -76,7 +80,6 @@ export const loginUser = async (body: LoginBody): Promise<AuthResponse> => {
 
   const user = await findUserByEmail(email);
 
-  
   if (!user) {
     throw new UnauthorizedError('Invalid email or password');
   }
@@ -90,22 +93,14 @@ export const loginUser = async (body: LoginBody): Promise<AuthResponse> => {
     throw new UnauthorizedError('Invalid email or password');
   }
 
-  const payload: JwtPayload = {
-    user_id: user.user_id,
-    email:   user.email,
-    role:    user.role,
-  };
-
-  const token = jwt.sign(payload, env.jwt.secret, {
-    expiresIn: env.jwt.expiresIn as jwt.SignOptions['expiresIn'],
-  });
+  const token = generateToken(user);
 
   const safeUser: SafeUser = {
-    user_id:    user.user_id,
-    name:       user.name,
-    email:      user.email,
-    role:       user.role,
-    is_active:  user.is_active,
+    user_id: user.user_id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    is_active: user.is_active,
     created_at: user.created_at,
     updated_at: user.updated_at,
   };

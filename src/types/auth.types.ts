@@ -6,9 +6,10 @@ export interface User {
   password_hash: string;
   role: 'learner' | 'mentor' | 'administrator';
   is_active: boolean;
-  google_id?: string; 
-  created_at: Date;
-  updated_at: Date;
+  google_id?: string | null;
+  email_verified?: boolean;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 // What we return to the client — never expose password_hash
@@ -17,6 +18,7 @@ export type SafeUser = Omit<User, 'password_hash'>;
 // What the JWT token payload contains
 export interface JwtPayload {
   user_id: number;
+  name: string;
   email: string;
   role: 'learner' | 'mentor' | 'administrator';
 }

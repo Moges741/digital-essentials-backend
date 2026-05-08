@@ -1,5 +1,20 @@
 import db from '../config/db';
-import { User, SafeUser } from '../types/auth.types';
+import bcrypt from 'bcrypt';
+// Type definitions for user records
+export interface User {
+  user_id: number;
+  name: string;
+  email: string;
+  password_hash: string;
+  role: 'learner' | 'mentor' | 'administrator';
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+  google_id?: string | null;
+  email_verified?: boolean;
+}
+
+export type SafeUser = Omit<User, 'password_hash'>;
 
 // ─── Find user by email ──────────────
 export const findUserByEmail = async (email: string): Promise<User | undefined> => {
@@ -8,19 +23,10 @@ export const findUserByEmail = async (email: string): Promise<User | undefined> 
     .first();
 };
 
-// ─── Find user by ID ────────────────
-export const findUserById = async (user_id: number): Promise<SafeUser | undefined> => {
+// ─── Find user by ID (full user) ────────────────
+export const findUserByIdFull = async (user_id: number): Promise<User | undefined> => {
   return db('users')
     .where({ user_id })
-    .select(
-      'user_id',
-      'name',
-      'email',
-      'role',
-      'is_active',
-      'created_at',
-      'updated_at'
-    )
     .first();
 };
 

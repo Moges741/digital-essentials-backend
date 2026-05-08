@@ -59,4 +59,5 @@ router.get('/google', googleAuth);
 
 // ─── GET /api/auth/google/callback ──────────────────────────
 router.get('/google/callback', passport.authenticate('google', { session: false }), googleAuthCallback);
+
 export default router;
