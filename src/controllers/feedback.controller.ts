@@ -5,6 +5,7 @@ import {
   updateFeedbackService,
   deleteFeedbackService,
   listFeedbackByCourseService,
+  listMyFeedbackService,
 } from '../services/feedback.service';
 import { sendSuccess, sendError } from '../utils/response';
 import { AppError } from '../utils/errors';
@@ -111,6 +112,23 @@ export const listFeedbackByCourseController = async (
     const course_idParam = req.params.course_id;
     const course_id = parseInt(Array.isArray(course_idParam) ? course_idParam[0] : course_idParam, 10);
     const feedback = await listFeedbackByCourseService(course_id, req.user!);
+    sendSuccess(res, { feedback }, 'Feedback retrieved successfully');
+  } catch (error) {
+    if (error instanceof AppError) {
+      sendError(res, error.message, error.statusCode);
+    } else {
+      next(error);
+    }
+  }
+};
+// ─── LIST MY FEEDBACK ────────────────────────────
+export const listMyFeedbackController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const feedback = await listMyFeedbackService(req.user!);
     sendSuccess(res, { feedback }, 'Feedback retrieved successfully');
   } catch (error) {
     if (error instanceof AppError) {

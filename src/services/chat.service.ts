@@ -127,8 +127,20 @@ export const processChat = async (
   );
 
   return {
-    user_message: savedUserMessage,
-    ai_message: savedAiMessage,
+    user_message: {
+      message_id: savedUserMessage.message_id,
+      user_id: userId,
+      role: 'user' as const,
+      content: savedUserMessage.message,
+      created_at: savedUserMessage.created_at.toISOString(),
+    },
+    ai_message: {
+      message_id: savedAiMessage.message_id,
+      user_id: userId,
+      role: 'assistant' as const,
+      content: savedAiMessage.message,
+      created_at: savedAiMessage.created_at.toISOString(),
+    },
     session_id: activeSessionId,
   };
 };
@@ -149,7 +161,16 @@ export const getChatHistory = async (
     sessionId
   );
 
-  return { messages, total, limit, offset };
+  // Transform messages to match frontend expectations
+  const transformedMessages = messages.map(msg => ({
+    message_id: msg.message_id,
+    user_id: userId,
+    role: (msg.sender === 'ai' ? 'assistant' : 'user') as 'user' | 'assistant',
+    content: msg.message,
+    created_at: msg.created_at.toISOString(),
+  }));
+
+  return { messages: transformedMessages, total, limit, offset };
 };
 
 /**

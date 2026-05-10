@@ -5,6 +5,7 @@ import {
   updateFeedback,
   deleteFeedback,
   listFeedbackByCourse,
+  listMyFeedback,
 } from '../models/feedback.model';
 import { findEnrollmentById } from '../models/enrollment.model';
 import { findCourseById } from '../models/course.model';
@@ -119,4 +120,11 @@ export const listFeedbackByCourseService = async (
   }
 
   return listFeedbackByCourse(course_id);
+};
+
+// ─── LIST MY FEEDBACK ────────────────────────────
+export const listMyFeedbackService = async (
+  user: JwtPayload
+): Promise<FeedbackWithDetails[]> => {
+  return listMyFeedback(user.user_id);
 };

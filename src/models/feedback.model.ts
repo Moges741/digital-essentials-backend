@@ -61,6 +61,24 @@ export const deleteFeedback = async (feedback_id: number): Promise<void> => {
     .delete();
 };
 
+// ─── List feedback for current user ─────────
+export const listMyFeedback = async (
+  user_id: number
+): Promise<FeedbackWithDetails[]> => {
+  return db('feedback')
+    .join('enrollments', 'feedback.enrollment_id', 'enrollments.enrollment_id')
+    .join('users', 'enrollments.user_id', 'users.user_id')
+    .join('courses', 'enrollments.course_id', 'courses.course_id')
+    .where('enrollments.user_id', user_id)
+    .select(
+      'feedback.*',
+      'courses.title as course_title',
+      'users.name as user_name',
+      'users.email as user_email'
+    )
+    .orderBy('feedback.submitted_at', 'desc');
+};
+
 // ─── List feedback for a course (mentor view) ─────────
 export const listFeedbackByCourse = async (
   course_id: number

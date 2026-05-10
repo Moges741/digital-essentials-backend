@@ -15,7 +15,6 @@ router.use(authenticate);
 
 router.post(
   '/send',
-  authorizeRoles('learner'),
   [
     body('message')
       .trim()
@@ -36,7 +35,6 @@ router.post(
 
 router.get(
   '/history',
-  authorizeRoles('learner'),
   [
     query('limit')
       .optional()
@@ -58,7 +56,6 @@ router.get(
 
 router.delete(
   '/history',
-  authorizeRoles('learner', 'mentor', 'administrator'),
   [
     query('session_id')
       .optional()

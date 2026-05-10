@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import {env} from '../config/env';
 // import { sendVerificationEmail } from './email.service';
 // import {  createVerificationToken, verifyTokenAndGetUser } from '../models/user.model';
-import crypto from 'crypto';
+// import crypto from 'crypto';
 
 import {
     emailExists,

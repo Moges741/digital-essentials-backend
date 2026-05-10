@@ -6,6 +6,7 @@ import {
   updateFeedbackController,
   deleteFeedbackController,
   listFeedbackByCourseController,
+  listMyFeedbackController,
 } from '../controllers/feedback.controller';
 import { authenticate, authorizeRoles } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
@@ -61,6 +62,13 @@ router.delete(
   [param('feedback_id').isInt({ min: 1 }).withMessage('Invalid feedback ID')],
   validate,
   deleteFeedbackController
+);
+
+// ── GET /api/feedback/my ───────────────────────────────
+router.get(
+  '/my',
+  authenticate,
+  listMyFeedbackController
 );
 
 // ── GET /api/feedback/courses/:course_id ──────────────

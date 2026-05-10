@@ -27,13 +27,13 @@ export interface ChatHistoryQuery {
 }
 
 export interface SendMessageResponse {
-  user_message: DatabaseChatMessageResponse;
-  ai_message: DatabaseChatMessageResponse;
+  user_message: ChatMessageResponse;
+  ai_message: ChatMessageResponse;
   session_id: string;
 }
 
 export interface ChatHistoryResponse {
-  messages: DatabaseChatMessageResponse[];
+  messages: ChatMessageResponse[];
   total: number;
   limit: number;
   offset: number;
@@ -79,18 +79,10 @@ export interface GroqChatRequest {
   temperature?: number;
 }
 
-export interface ChatMessageResponse {  
-  id: string;
-  choices: {
-    message: {
-      role: string;
-      content: string;
-    };
-    finish_reason: string;
-  }[];
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
+export interface ChatMessageResponse {
+  message_id: number;
+  user_id: number;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
 }
