@@ -109,3 +109,31 @@ export const deleteCertificateController = async (
     }
   }
 };
+// ── DOWNLOAD CERTIFICATE ──────────────────────────────────────
+export const downloadCertificateController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const certificate_idParam = req.params.certificate_id;
+    const certificate_id = parseInt(Array.isArray(certificate_idParam) ? certificate_idParam[0] : certificate_idParam, 10);
+    const certificate    = await getCertificateService(certificate_id, req.user!);
+
+    if (!certificate.certificate_url) {
+      sendError(res, 'Certificate file not yet generated', 404);
+      return;
+    }
+
+    // Redirect to Cloudinary URL
+    // Browser will download because of Cloudinary's response headers
+    res.redirect(certificate.certificate_url);
+
+  } catch (error) {
+    if (error instanceof AppError) {
+      sendError(res, error.message, error.statusCode);
+    } else {
+      next(error);
+    }
+  }
+};

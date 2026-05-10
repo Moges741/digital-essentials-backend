@@ -64,7 +64,6 @@ export const updateCertificateUrl = async (
     .where({ certificate_id })
     .update({ certificate_url });
 };
-
 // ─── Delete certificate ───────────
 export const deleteCertificate = async (certificate_id: number): Promise<void> => {
   await db('certificates')

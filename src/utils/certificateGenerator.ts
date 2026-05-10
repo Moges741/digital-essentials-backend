@@ -165,7 +165,7 @@ export const generateCertificatePDF = (
     doc.font('Helvetica')
        .fontSize(9)
        .fillColor('#9CA3AF')
-       .text('Digital Essentials Platform · CBTP Phase II', 0, 402, {
+       .text('Digital Essentials Platform', 0, 402, {
          align: 'center',
          width: W,
        });

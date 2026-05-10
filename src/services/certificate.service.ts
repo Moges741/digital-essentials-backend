@@ -7,6 +7,10 @@ import {
   updateCertificateUrl,
   deleteCertificate,
 } from '../models/certificate.model';
+import { Readable }   from 'stream';
+import { generateCertificatePDF } from '../utils/certificateGenerator';
+import { findUserById } from '../models/user.model';
+import { format }     from 'date-fns';
 import { findCourseById } from '../models/course.model';
 import { findEnrollmentByUserAndCourse } from '../models/enrollment.model';
 import {
@@ -125,22 +129,79 @@ export const deleteCertificateService = async (
 
   await deleteCertificate(certificate_id);
 };
+// ── AUTO GENERATE REAL PDF CERTIFICATE ────────────────────────
+// Called from progress.service.ts when all lessons complete
+// Generates real PDF → uploads to Cloudinary → stores URL in DB
 export const generateCertificateService = async (
-  user_id: number,
+  user_id:   number,
   course_id: number
 ): Promise<void> => {
 
-  // Don't generate if already exists
-  const existing = await findCertificateByUserAndCourse(user_id, course_id);
+  // Don't generate if certificate already exists
+  const existing = await findCertificateByUserAndCourse(
+    user_id,
+    course_id
+  );
   if (existing) return;
 
-  // Generate a simple certificate URL
-  // Format: cloudinary placeholder with user and course info
-  const certificate_url = `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/digital-essentials/certificates/${user_id}_${course_id}`;
+  // Get course details for the certificate text
+  const course = await findCourseById(course_id);
+  if (!course) return;
 
-  await createCertificate({
+  // Get learner name for the certificate
+  const user = await findUserById(user_id);
+  if (!user) return;
+
+  // Create the certificate record first to get certificate_id
+  const certificate_id = await createCertificate({
     user_id,
     course_id,
-    certificate_url,
+    certificate_url: '',  // placeholder — updated below
   });
+
+  try {
+    // Generate PDF buffer
+    const pdfBuffer = await generateCertificatePDF({
+      learnerName:    user.name,
+      courseName:     course.title,
+      issuedDate:     format(new Date(), 'MMMM dd, yyyy'),
+      certificateId:  certificate_id,
+    });
+
+    // Upload PDF to Cloudinary
+    const cloudinaryUrl = await new Promise<string>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder:        'digital-essentials/certificates',
+          public_id:     `certificate_${user_id}_${course_id}`,
+          resource_type: 'raw',
+          format:        'pdf',
+          // Allow download with original filename
+          use_filename:  true,
+          unique_filename: false,
+        },
+        (error, result) => {
+          if (error || !result) {
+            reject(error ?? new Error('Cloudinary upload failed'));
+            return;
+          }
+          resolve(result.secure_url);
+        }
+      );
+
+      // Pipe buffer to upload stream
+      const readable = new Readable();
+      readable.push(pdfBuffer);
+      readable.push(null);
+      readable.pipe(uploadStream);
+    });
+
+    // Update certificate record with real Cloudinary URL
+    await updateCertificateUrl(certificate_id, cloudinaryUrl);
+
+  } catch (error) {
+    // If PDF generation fails, certificate record still exists
+    // with empty URL — better than no record at all
+    console.error('Certificate PDF generation failed:', error);
+  }
 };

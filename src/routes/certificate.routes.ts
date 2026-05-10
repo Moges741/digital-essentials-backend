@@ -6,6 +6,7 @@ import {
   listMyCertificatesController,
   updateCertificateUrlController,
   deleteCertificateController,
+  downloadCertificateController,
 } from '../controllers/certificate.controller';
 import { authenticate, authorizeRoles } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
@@ -63,5 +64,11 @@ router.delete(
   validate,
   deleteCertificateController
 );
-
+router.get(
+  '/:certificate_id/download',
+  authenticate,
+  [param('certificate_id').isInt({ min: 1 }).withMessage('Invalid certificate ID')],
+  validate,
+  downloadCertificateController,
+);
 export default router;

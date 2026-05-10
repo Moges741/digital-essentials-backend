@@ -82,3 +82,14 @@ export const emailExists = async (email: string): Promise<boolean> => {
     .first();
   return Number(result?.count) > 0;
 };
+ 
+export const findUserById = async (user_id: number): Promise<SafeUser | undefined> => {
+  const user = await db('users')
+    .where({ user_id })
+    .first();
+
+  if (!user) return undefined;
+
+  const { password_hash, ...safeUser } = user;
+  return safeUser;
+};
