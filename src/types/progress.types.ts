@@ -9,9 +9,16 @@ export interface Progress {
 }
 
 // Progress with lesson details joined
-export interface ProgressWithLesson extends Progress {
-  lesson_title: string;
-  lesson_order: number;
+export interface ProgressWithLesson {
+  progress_id?:   number;
+  user_id?:       number;
+  lesson_id:      number;
+  enrollment_id?: number;
+  is_completed?:  boolean;
+  last_accessed?: Date;
+  synced_at?:     Date | null;
+  lesson_title:   string;
+  lesson_order:   number;
 }
 
 // Full course progress summary

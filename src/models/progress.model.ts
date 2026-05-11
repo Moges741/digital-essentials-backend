@@ -11,6 +11,21 @@ export const findProgress = async (
     .first();
 };
 
+// ─── Create progress row ───────────────────────────
+export const createProgress = async (
+  user_id: number,
+  lesson_id: number,
+  enrollment_id: number
+): Promise<void> => {
+  await db('progress').insert({
+    user_id,
+    lesson_id,
+    enrollment_id,
+    is_completed: false,
+    synced_at: null,
+  });
+};
+
 // ─── Mark lesson complete ─────────────────────────────────────
 export const markLessonComplete = async (
   user_id: number,
@@ -45,13 +60,23 @@ export const getCourseProgress = async (
   user_id: number,
   course_id: number
 ): Promise<ProgressWithLesson[]> => {
-  return db('progress')
-    .join('lessons', 'progress.lesson_id', 'lessons.lesson_id')
-    .join('enrollments', 'progress.enrollment_id', 'enrollments.enrollment_id')
-    .where('progress.user_id', user_id)
-    .where('enrollments.course_id', course_id)
+  return db('lessons')
+    .leftJoin('progress', function() {
+      this.on('progress.lesson_id', 'lessons.lesson_id')
+          .andOn('progress.user_id', db.raw('?', [user_id]));
+    })
+    .join('enrollments', function() {
+      this.on('enrollments.course_id', 'lessons.course_id')
+          .andOn('enrollments.user_id', db.raw('?', [user_id]));
+    })
+    .where('lessons.course_id', course_id)
     .select(
-      'progress.*',
+      'progress.user_id',
+      'progress.lesson_id',
+      'progress.enrollment_id',
+      'progress.is_completed',
+      'progress.last_accessed',
+      'progress.synced_at',
       'lessons.title as lesson_title',
       'lessons.lesson_order'
     )
@@ -102,7 +127,7 @@ export const getProgressSummary = async (
   const lessons = await getCourseProgress(user_id, course_id);
 
   const total     = lessons.length;
-  const completed = lessons.filter((l) => l.is_completed).length;
+  const completed = lessons.filter((l) => l.is_completed === true).length;
   const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return {

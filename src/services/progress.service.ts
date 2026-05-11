@@ -1,5 +1,6 @@
 import {
   findProgress,
+  createProgress,
   markLessonComplete,
   markLessonCompleteOffline,
   allLessonsComplete,
@@ -45,9 +46,14 @@ export const markCompleteService = async (
   }
 
   // 3. Find progress row — created at enrollment time
-  const progress = await findProgress(user.user_id, lesson_id);
+  let progress = await findProgress(user.user_id, lesson_id);
   if (!progress) {
-    throw new NotFoundError('Progress record not found');
+    // Progress record missing — create it (e.g., lesson added after enrollment)
+    await createProgress(user.user_id, lesson_id, enrollment.enrollment_id);
+    progress = await findProgress(user.user_id, lesson_id);
+    if (!progress) {
+      throw new ValidationError('Failed to create progress record');
+    }
   }
 
   // 4. Already completed — no need to update
