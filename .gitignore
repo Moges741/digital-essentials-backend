@@ -2,3 +2,13 @@ node_modules/
 dist/
 .env
 *.js.map
+.env
+.env.*
+coverage/
+logs/
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.iml   
+    
