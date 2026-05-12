@@ -11,7 +11,6 @@ export interface User {
   created_at: Date;
   updated_at: Date;
   google_id?: string | null;
-  email_verified?: boolean;
 }
 
 export type SafeUser = Omit<User, 'password_hash'>;

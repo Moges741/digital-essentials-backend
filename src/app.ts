@@ -12,6 +12,7 @@ import exerciseRoutes from './routes/exercise.routes';
 import feedbackRoutes from './routes/feedback.routes';
 import certificateRoutes from './routes/certificate.routes';
 import chatRoutes from './routes/chat.routes';
+import adminRoutes from './routes/admin.routes';
 import './config/passport'; 
 import passport from 'passport';
 const app = express();
@@ -46,6 +47,7 @@ app.use('/api/courses/:course_id/exercises', exerciseRoutes);
 app.use('/api/feedback',    feedbackRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/chat',         chatRoutes);
+app.use('/api/admin',        adminRoutes);
 // app.use('/api/forum',       forumRoutes);
 
 // ── 404 handler ──────
