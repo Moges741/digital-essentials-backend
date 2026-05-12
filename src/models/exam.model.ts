@@ -1,5 +1,3 @@
-// src/models/exam.model.ts
-// All database queries for the final exam feature
 
 import db from '../config/db';
 import {
