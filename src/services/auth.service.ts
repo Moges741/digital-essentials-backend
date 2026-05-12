@@ -43,7 +43,7 @@ export const generateToken = (user: SafeUser): string => {
   });
 };
   
-export const registerUser = async (body: RegisterBody): Promise<SafeUser> => {
+export const registerUser = async (body: RegisterBody): Promise<AuthResponse> => {
     const {name, email, password , role, specialization, qualifications} = body;
     if(role === 'mentor' && !specialization) {
         throw new ValidationError('Mentors must provide a specialization');
@@ -68,8 +68,12 @@ export const registerUser = async (body: RegisterBody): Promise<SafeUser> => {
     }
 
     const user = await findUserByIdFull(user_id);
+    const token = generateToken(user!);
 
-    return user!;
+    return {
+        user: user!,
+        token
+    };
 }
 
 

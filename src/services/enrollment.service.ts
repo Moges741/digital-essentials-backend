@@ -55,6 +55,7 @@ export const enrollService = async (
   const enrollment_id = await createEnrollment(user.user_id, course_id);
 
   // 5. Initialize progress for all existing lessons
+  console.log(`Initializing progress for user ${user.user_id}, course ${course_id}, enrollment ${enrollment_id}`);
   await initializeProgress(user.user_id, course_id, enrollment_id);
 
   const enrollment = await findEnrollmentById(enrollment_id);

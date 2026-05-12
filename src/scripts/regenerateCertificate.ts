@@ -3,33 +3,40 @@ import db                 from '../config/db';
 import { generateCertificateService } from '../services/certificate.service';
 
 const run = async () => {
-  console.log('Checking for certificates with empty URLs...');
+  console.log('Testing certificate generation...');
 
-  const empties = await db('certificates')
-    .where('certificate_url', '')
-    .orWhere('certificate_url', 'like', '%example.com%')
-    .orWhere('certificate_url', 'like', '%digital-essentials.com%')
-    .select('certificate_id', 'user_id', 'course_id');
+  // Find a completed enrollment
+  const completedEnrollment = await db('enrollments')
+    .where('status', 'completed')
+    .first();
 
-  console.log(`Found ${empties.length} certificates to regenerate`);
-
-  for (const cert of empties) {
-    console.log(
-      `Regenerating certificate ${cert.certificate_id} ` +
-      `for user ${cert.user_id}, course ${cert.course_id}...`
-    );
-
-    // Delete old record so generateCertificateService creates a fresh one
-    await db('certificates')
-      .where('certificate_id', cert.certificate_id)
-      .delete();
-
-    await generateCertificateService(cert.user_id, cert.course_id);
-    console.log('Done ✓');
+  if (!completedEnrollment) {
+    console.log('No completed enrollments found');
+    return;
   }
 
-  console.log('All certificates regenerated.');
-  process.exit(0);
+  console.log(`Found completed enrollment: ${completedEnrollment.enrollment_id} for user ${completedEnrollment.user_id}, course ${completedEnrollment.course_id}`);
+
+  // Check if certificate already exists
+  const existingCert = await db('certificates')
+    .where({
+      user_id: completedEnrollment.user_id,
+      course_id: completedEnrollment.course_id
+    })
+    .first();
+
+  if (existingCert) {
+    console.log('Certificate already exists');
+    return;
+  }
+
+  console.log('Generating certificate...');
+  try {
+    await generateCertificateService(completedEnrollment.user_id, completedEnrollment.course_id);
+    console.log('Certificate generated successfully!');
+  } catch (error) {
+    console.error('Certificate generation failed:', error);
+  }
 };
 
 run().catch((err) => {

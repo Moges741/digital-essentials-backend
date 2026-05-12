@@ -16,11 +16,19 @@ export const createCertificate = async (data: {
 
 // ─── Find certificate by user and course ─────────
 export const findCertificateByUserAndCourse = async (
-  user_id: number,
+  user_id:   number,
   course_id: number
-): Promise<Certificate | undefined> => {
+): Promise<any | undefined> => {
   return db('certificates')
-    .where({ user_id, course_id })
+    .join('courses', 'certificates.course_id', 'courses.course_id')
+    .join('users',   'certificates.user_id',   'users.user_id')
+    .where('certificates.user_id',   user_id)
+    .where('certificates.course_id', course_id)
+    .select(
+      'certificates.*',
+      'courses.title  as course_title',
+      'users.name     as creator_name'
+    )
     .first();
 };
 

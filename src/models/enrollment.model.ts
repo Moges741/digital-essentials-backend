@@ -84,6 +84,8 @@ export const initializeProgress = async (
     .where({ course_id })
     .select('lesson_id');
 
+  console.log(`Found ${lessons.length} lessons for course ${course_id}`);
+
   if (lessons.length === 0) return;
 
   const progressRows = lessons.map((lesson) => ({
@@ -94,7 +96,9 @@ export const initializeProgress = async (
     synced_at:     null,
   }));
 
+  console.log(`Creating ${progressRows.length} progress records for enrollment ${enrollment_id}`);
   await db('progress').insert(progressRows);
+  console.log('Progress records created successfully');
 };
 
 // ─── Update enrollment status ─────────────────────────────────

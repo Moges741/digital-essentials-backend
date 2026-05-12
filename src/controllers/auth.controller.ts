@@ -12,8 +12,8 @@ export const register = async (
 ): Promise<void> => {
   try {
     const body = req.body as RegisterBody;
-    const user = await registerUser(body);
-    sendSuccess(res, { user }, 'Account created successfully', 201);
+    const result = await registerUser(body);
+    sendSuccess(res, result, 'Account created successfully', 201);
   } catch (error) {
     if (error instanceof AppError) {
       sendError(res, error.message, error.statusCode);

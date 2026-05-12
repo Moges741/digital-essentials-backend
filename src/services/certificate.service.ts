@@ -136,21 +136,35 @@ export const generateCertificateService = async (
   user_id:   number,
   course_id: number
 ): Promise<void> => {
+  console.log(`Starting certificate generation for user ${user_id}, course ${course_id}`);
 
   // Don't generate if certificate already exists
   const existing = await findCertificateByUserAndCourse(
     user_id,
     course_id
   );
-  if (existing) return;
+  if (existing) {
+    console.log('Certificate already exists, skipping generation');
+    return;
+  }
+
+  console.log('Certificate does not exist, proceeding with generation');
 
   // Get course details for the certificate text
   const course = await findCourseById(course_id);
-  if (!course) return;
+  if (!course) {
+    console.log('Course not found, cannot generate certificate');
+    return;
+  }
 
   // Get learner name for the certificate
   const user = await findUserById(user_id);
-  if (!user) return;
+  if (!user) {
+    console.log('User not found, cannot generate certificate');
+    return;
+  }
+
+  console.log(`Generating certificate for ${user.name} - ${course.title}`);
 
   // Create the certificate record first to get certificate_id
   const certificate_id = await createCertificate({
@@ -159,16 +173,21 @@ export const generateCertificateService = async (
     certificate_url: '',  // placeholder — updated below
   });
 
+  console.log(`Created certificate record with ID ${certificate_id}`);
+
   try {
     // Generate PDF buffer
+    console.log('Generating PDF...');
     const pdfBuffer = await generateCertificatePDF({
       learnerName:    user.name,
       courseName:     course.title,
       issuedDate:     format(new Date(), 'MMMM dd, yyyy'),
       certificateId:  certificate_id,
     });
+    console.log('PDF generated successfully, size:', pdfBuffer.length);
 
     // Upload PDF to Cloudinary
+    console.log('Uploading to Cloudinary...');
     const cloudinaryUrl = await new Promise<string>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -182,9 +201,11 @@ export const generateCertificateService = async (
         },
         (error, result) => {
           if (error || !result) {
+            console.error('Cloudinary upload error:', error);
             reject(error ?? new Error('Cloudinary upload failed'));
             return;
           }
+          console.log('Cloudinary upload successful:', result.secure_url);
           resolve(result.secure_url);
         }
       );
@@ -196,12 +217,16 @@ export const generateCertificateService = async (
       readable.pipe(uploadStream);
     });
 
+    console.log(`PDF uploaded to Cloudinary: ${cloudinaryUrl}`);
+
     // Update certificate record with real Cloudinary URL
     await updateCertificateUrl(certificate_id, cloudinaryUrl);
+    console.log('Certificate generation completed successfully');
 
   } catch (error) {
-    // If PDF generation fails, certificate record still exists
-    // with empty URL — better than no record at all
-    console.error('Certificate PDF generation failed:', error);
+    console.error('Error during certificate generation:', error);
+    // If PDF generation or upload fails, we still have the certificate record
+    // but with empty URL — the regenerate script can fix this later
+    throw error;
   }
 };

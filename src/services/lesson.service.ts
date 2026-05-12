@@ -8,6 +8,7 @@ import {
   lessonBelongsToCourse,
 } from '../models/lesson.model';
 import { findCourseById } from '../models/course.model';
+import db from '../config/db';
 import {
   Lesson,
   LessonWithMaterials,
@@ -69,6 +70,29 @@ export const createLessonService = async (
 
   const lesson_id = await createLesson(course_id, body);
   const lesson    = await findLessonById(lesson_id);
+
+  // Create progress records for all active enrollments in this course
+  // When a lesson is added after enrollment, learners need progress tracking
+  const enrollments = await db('enrollments')
+    .where({ course_id })
+    .whereNot('status', 'dropped')
+    .select('enrollment_id', 'user_id');
+
+  console.log(`Found ${enrollments.length} enrollments for course ${course_id} when creating lesson ${lesson_id}`);
+
+  if (enrollments.length > 0) {
+    const progressRows = enrollments.map((enrollment) => ({
+      user_id:       enrollment.user_id,
+      lesson_id:     lesson_id,
+      enrollment_id: enrollment.enrollment_id,
+      is_completed:  false,
+      synced_at:     null,
+    }));
+
+    console.log(`Creating ${progressRows.length} progress records for new lesson ${lesson_id}`);
+    await db('progress').insert(progressRows);
+    console.log('Progress records for new lesson created successfully');
+  }
 
   return lesson!;
 };

@@ -29,12 +29,14 @@ export const markCompleteService = async (
   lesson_id: number,
   user: JwtPayload
 ): Promise<void> => {
+  console.log(`Marking lesson ${lesson_id} complete for user ${user.user_id}`);
 
   // 1. Lesson must exist
   const lesson = await findLessonById(lesson_id);
   if (!lesson) {
     throw new NotFoundError('Lesson not found');
   }
+
   // 2. Learner must be enrolled in the course
   const enrollment = await findEnrollmentByUserAndCourse(
     user.user_id,
@@ -70,10 +72,16 @@ export const markCompleteService = async (
     // Mark enrollment as completed
     await updateEnrollmentStatus(enrollment.enrollment_id, 'completed');
 
-    // Auto-generate certificate
-    // From your document Section 3.3-C:
-    // "Users receive digital or printable certificates upon course completion"
-    await generateCertificateService(user.user_id, lesson.course_id);
+    try {
+      // Auto-generate certificate
+      // From your document Section 3.3-C:
+      // "Users receive digital or printable certificates upon course completion"
+      await generateCertificateService(user.user_id, lesson.course_id);
+    } catch (error) {
+      console.error('Failed to generate certificate:', error);
+      // Don't fail the lesson completion if certificate generation fails
+      // The user can manually request the certificate later
+    }
   }
 };
 

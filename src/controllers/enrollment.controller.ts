@@ -38,6 +38,12 @@ export const getMyEnrollmentsController = async (
 ): Promise<void> => {
   try {
     const enrollments = await getMyEnrollmentsService(req.user!);
+    console.log(`User ${req.user!.user_id} enrollments:`, enrollments.map(e => ({
+      course_title: e.course_title,
+      total_lessons: e.total_lessons,
+      completed_lessons: e.completed_lessons,
+      status: e.status
+    })));
     sendSuccess(res, { enrollments }, 'Enrollments retrieved successfully');
   } catch (error) {
     if (error instanceof AppError) {
