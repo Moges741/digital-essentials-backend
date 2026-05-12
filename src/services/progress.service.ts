@@ -68,21 +68,21 @@ export const markCompleteService = async (
 
 // 6. Check if ALL lessons in enrollment are now complete
   const allDone = await allLessonsComplete(enrollment.enrollment_id);
-  if (allDone) {
-    // Mark enrollment as completed
-    await updateEnrollmentStatus(enrollment.enrollment_id, 'completed');
+if (allDone) {
+  // Check if course has a final exam
+  const { findExamByCourse } = await import('../models/exam.model');
+  const finalExam = await findExamByCourse(lesson.course_id);
 
-    try {
-      // Auto-generate certificate
-      // From your document Section 3.3-C:
-      // "Users receive digital or printable certificates upon course completion"
-      await generateCertificateService(user.user_id, lesson.course_id);
-    } catch (error) {
-      console.error('Failed to generate certificate:', error);
-      // Don't fail the lesson completion if certificate generation fails
-      // The user can manually request the certificate later
-    }
+  if (finalExam) {
+    // Exam exists → lock certificate until exam passed
+    await updateEnrollmentStatus(enrollment.enrollment_id, 'exam_pending');
+    // Do NOT generate certificate yet
+  } else {
+    // No exam → complete enrollment and generate certificate
+    await updateEnrollmentStatus(enrollment.enrollment_id, 'completed');
+    await generateCertificateService(user.user_id, lesson.course_id);
   }
+}
 };
 
 // ─── SYNC OFFLINE PROGRESS ────────────────────────────────────
@@ -140,11 +140,20 @@ export const syncOfflineProgressService = async (
       );
 
       // Check course completion after each sync
-    const allDone = await allLessonsComplete(enrollment.enrollment_id);
-      if (allDone) {
-        await updateEnrollmentStatus(enrollment.enrollment_id, 'completed');
-        await generateCertificateService(user.user_id, lesson.course_id);
-      }
+const allDone = await allLessonsComplete(enrollment.enrollment_id);
+if (allDone) {
+  // Check if course has a final exam
+  const { findExamByCourse } = await import('../models/exam.model');
+  const finalExam = await findExamByCourse(lesson.course_id);
+
+  if (finalExam) {
+    await updateEnrollmentStatus(enrollment.enrollment_id, 'exam_pending');
+  } else {
+    // No exam → complete enrollment and generate certificate
+    await updateEnrollmentStatus(enrollment.enrollment_id, 'completed');
+    await generateCertificateService(user.user_id, lesson.course_id);
+  }
+}
 
       result.synced.push(item.lesson_id);
 

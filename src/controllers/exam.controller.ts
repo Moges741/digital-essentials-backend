@@ -17,7 +17,7 @@ import {
 } from '../services/exam.service';
 import { sendSuccess, sendError } from '../utils/response';
 import { AppError }               from '../utils/errors';
-import { ROLES }                  from '../utils/roleConstants';
+// import type { ROLES }                  from '../utils/roleConstants';
 
 // Helper to parse course_id param
 const parseCourseId = (req: Request) =>

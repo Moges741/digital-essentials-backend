@@ -3,7 +3,7 @@ export interface Enrollment {
   user_id: number;
   course_id: number;
   enrollment_date: Date;
-  status: 'active' | 'completed' | 'dropped';
+  status: 'active' | 'exam_pending' | 'completed' | 'dropped';
 }
 
 // Enrollment with course details joined

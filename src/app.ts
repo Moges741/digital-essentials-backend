@@ -13,10 +13,14 @@ import feedbackRoutes from './routes/feedback.routes';
 import certificateRoutes from './routes/certificate.routes';
 import chatRoutes from './routes/chat.routes';
 import adminRoutes from './routes/admin.routes';
+import examRoutes from './routes/exam.routes';
 import './config/passport'; 
 import passport from 'passport';
+
 const app = express();
+
 app.use(passport.initialize());
+
 app.use(
   cors({
     origin: 'http://localhost:5173',
@@ -29,6 +33,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // ── Health check ─────────
 app.get('/health', (_req: Request, res: Response) => {
+  console.log('Health check endpoint hit');
   res.status(200).json({
     success: true,
     message: 'Digital Essentials API is running',
@@ -48,6 +53,7 @@ app.use('/api/feedback',    feedbackRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/chat',         chatRoutes);
 app.use('/api/admin',        adminRoutes);
+app.use('/api/courses/:course_id/exam', examRoutes);
 // app.use('/api/forum',       forumRoutes);
 
 // ── 404 handler ──────

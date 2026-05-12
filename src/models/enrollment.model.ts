@@ -104,7 +104,7 @@ export const initializeProgress = async (
 // ─── Update enrollment status ─────────────────────────────────
 export const updateEnrollmentStatus = async (
   enrollment_id: number,
-  status: 'active' | 'completed' | 'dropped'
+  status: 'active' | 'exam_pending' | 'completed' | 'dropped'
 ): Promise<void> => {
   await db('enrollments')
     .where({ enrollment_id })
