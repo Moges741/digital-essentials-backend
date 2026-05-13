@@ -71,7 +71,7 @@ export interface ExamResult {
   exercise_id:      number;
   score:            number | null;
   submitted_at:     string;
-  is_passed:        boolean;
+  is_passed:        boolean | null;
   is_fully_graded:  boolean;   // all short answers reviewed
   answers:          ExamAnswerWithQuestion[];
 }
@@ -84,7 +84,7 @@ export interface ExamSubmissionForMentor {
   learner_email:   string;
   score:           number | null;
   submitted_at:    string;
-  is_passed:       boolean;
+  is_passed:       boolean | null;
   is_fully_graded: boolean;
   pending_count:   number;  // short answers not yet graded
 }
@@ -118,4 +118,14 @@ export interface SubmitExamBody {
 // Request body — mentor grades one short answer
 export interface GradeAnswerBody {
   is_correct: boolean;
+}
+
+// Response from grading a short answer
+export interface GradeAnswerResponse {
+  success:           boolean;
+  message:           string;
+  submission_status: 'pending' | 'fully_graded';
+  overall_score:     number | null;
+  is_passed:         boolean | null;
+  pending_count:     number;
 }

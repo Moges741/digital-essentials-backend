@@ -20,6 +20,7 @@ import {
   findAllSubmissionsForExam,
   countSubmissions,
 } from '../models/exam.model';
+import db from '../config/db';
 import { findCourseById }               from '../models/course.model';
 import { findEnrollmentByUserAndCourse } from '../models/enrollment.model';
 import { updateEnrollmentStatus }        from '../models/enrollment.model';
@@ -30,10 +31,12 @@ import {
   ExamForLearner,
   ExamResult,
   ExamSubmissionForMentor,
+  ExamAnswerWithQuestion,
   CreateExamBody,
   CreateQuestionBody,
   SubmitExamBody,
   GradeAnswerBody,
+  GradeAnswerResponse,
 } from '../types/exam.types';
 import { JwtPayload } from '../types/auth.types';
 import {
@@ -71,9 +74,9 @@ export const createExamService = async (
   // Only one final exam per course
   const existing = await findExamByCourse(course_id);
   if (existing) {
+    console.log(`[Create Exam] Exam already exists for course ${course_id}: ${existing.title}`);
     throw new ConflictError(
-      'This course already has a final exam. ' +
-      'Delete the existing one first.'
+      'An exam already exists for this course. Delete it from the exam builder to create a new one.'
     );
   }
 
@@ -83,6 +86,9 @@ export const createExamService = async (
     passing_score:  body.passing_score ?? 70,
     created_by:     user.user_id,
   });
+
+  console.log(`[Create Exam] Created exercise #${exercise_id} for course #${course_id}`);
+  console.log(`[Create Exam] Title: ${body.title}, Passing Score: ${body.passing_score ?? 70}%`);
 
   const exam = await findExamByCourse(course_id);
   return exam!;
@@ -107,6 +113,12 @@ export const getExamForLearnerService = async (
   course_id: number,
   user:      JwtPayload
 ): Promise<ExamForLearner> => {
+
+  // Verify learner is enrolled and eligible for exam
+  const enrollment = await findEnrollmentByUserAndCourse(user.user_id, course_id);
+  if (!enrollment || enrollment.status !== 'exam_pending') {
+    throw new ForbiddenError('You are not eligible to take this exam');
+  }
 
   const exam = await findExamWithQuestions(course_id);
   if (!exam) throw new NotFoundError('No final exam found for this course');
@@ -133,6 +145,8 @@ export const updateExamService = async (
 
   await updateExam(exam.exercise_id, passing_score);
 
+  console.log(`[Update Exam] Updated passing_score to ${passing_score}% for exam #${exam.exercise_id}`);
+
   const updated = await findExamByCourse(course_id);
   return updated!;
 };
@@ -143,12 +157,24 @@ export const deleteExamService = async (
   user:      JwtPayload
 ): Promise<void> => {
 
+  console.log(`[Delete Exam] Course ${course_id}, User ${user.user_id}`);
   await verifyCourseOwnership(course_id, user);
 
   const exam = await findExamByCourse(course_id);
-  if (!exam) throw new NotFoundError('No final exam found for this course');
+  if (!exam) {
+    console.log(`[Delete Exam] No exam found for course ${course_id}`);
+    throw new NotFoundError('No final exam found for this course');
+  }
 
-  await deleteExam(exam.exercise_id);
+  console.log(`[Delete Exam] Found exam: exercise_id=${exam.exercise_id}, title=${exam.title}`);
+  
+  try {
+    await deleteExam(exam.exercise_id);
+    console.log(`[Delete Exam] Deleted exercise #${exam.exercise_id}`);
+  } catch (error) {
+    console.error(`[Delete Exam] Error deleting exercise #${exam.exercise_id}:`, error);
+    throw error;
+  }
 };
 
 // ── ADD QUESTION ──────────────────────────────────────────────
@@ -197,6 +223,9 @@ export const addQuestionService = async (
     question_order: order,
   });
 
+  console.log(`[Add Question] Added Q#${question_id} to exam #${exam.exercise_id}`);
+  console.log(`[Add Question] Type: ${body.question_type}, Order: ${order}`);
+
   return findQuestion(question_id);
 };
 
@@ -220,6 +249,8 @@ export const updateQuestionService = async (
       : undefined,
   } as any);
 
+  console.log(`[Update Question] Updated Q#${question_id}: ${JSON.stringify(body)}`);
+
   return findQuestion(question_id);
 };
 
@@ -236,6 +267,8 @@ export const deleteQuestionService = async (
   if (!question) throw new NotFoundError('Question not found');
 
   await deleteQuestion(question_id);
+
+  console.log(`[Delete Question] Removed Q#${question_id} from exam #${question.exercise_id}`);
 };
 
 // ── SUBMIT EXAM ───────────────────────────────────────────────
@@ -245,20 +278,14 @@ export const submitExamService = async (
   user:      JwtPayload
 ): Promise<ExamResult> => {
 
-  // 1. Check enrollment exists and is exam_pending or active
+  // 1. Check enrollment exists and is exam_pending
   const enrollment = await findEnrollmentByUserAndCourse(
     user.user_id,
     course_id
   );
 
-  if (!enrollment || enrollment.status === 'dropped') {
-    throw new ForbiddenError('You are not enrolled in this course');
-  }
-
-  if (enrollment.status === 'completed') {
-    throw new ValidationError(
-      'You have already completed this course and received a certificate'
-    );
+  if (!enrollment || enrollment.status !== 'exam_pending') {
+    throw new ForbiddenError('You are not eligible to submit this exam');
   }
 
   // 2. Get exam and questions
@@ -273,6 +300,7 @@ export const submitExamService = async (
   );
 
   if (missing.length > 0) {
+    console.log(`[Submit Exam] Validation failed. Missing: ${missing.length} question(s)`);
     throw new ValidationError(
       `Please answer all questions. Missing: ${missing.length} question(s)`
     );
@@ -283,6 +311,7 @@ export const submitExamService = async (
     user.user_id,
     exam.exercise_id
   );
+  console.log(`[Submit Exam] Created submission #${submission_id} for learner #${user.user_id}`);
 
   // 5. Save each answer
   // Auto-grade multiple choice, leave short answer as null
@@ -295,12 +324,15 @@ export const submitExamService = async (
     let is_correct: boolean | null = null;
 
     if (question.question_type === 'multiple_choice') {
-      // Auto-grade: compare learner answer to correct answer
+      // Auto-grade: compare learner answer to correct answer (case-insensitive)
       is_correct =
         answer.answer_text.toUpperCase() ===
         question.correct_answer?.toUpperCase();
+      console.log(`[Submit Exam - MC] Q#${question.question_id}: Learner answered '${answer.answer_text}', Correct answer: '${question.correct_answer}', is_correct=${is_correct}`);
+    } else {
+      // short_answer → is_correct stays null (pending mentor review)
+      console.log(`[Submit Exam - Short] Q#${question.question_id}: Saved answer for mentor review, answer_text=${answer.answer_text}`);
     }
-    // short_answer → is_correct stays null (pending mentor review)
 
     await saveAnswer({
       submission_id,
@@ -317,36 +349,47 @@ export const submitExamService = async (
   );
 
   if (allMultipleChoice) {
+    console.log(`[Submit Exam] All MC exam detected. Proceeding to score calculation.`);
+
     const { score, is_passed, passing_score } =
       await calculateAndSaveScore(submission_id);
+
+    console.log(`[Submit Exam - Score] Submission #${submission_id}:`);
+    console.log(`  Score: ${score}%`);
+    console.log(`  Passing Score: ${passing_score}%`);
+    console.log(`  Is Passed: ${is_passed}`);
 
     if (is_passed) {
       // All lessons already done + exam passed → complete enrollment
       await updateEnrollmentStatus(enrollment.enrollment_id, 'completed');
-      // Generate certificate
+      console.log(`[Submit Exam] PASSED! Updating enrollment to 'completed'. Certificate generated.`);
       await generateCertificateService(user.user_id, course_id);
+    } else {
+      console.log(`[Submit Exam] FAILED! Score ${score}% < ${passing_score}%. Enrollment remains exam_pending for retake.`);
     }
+  } else {
+    console.log(`[Submit Exam] Exam has short answer questions. Keeping enrollment in exam_pending. Awaiting mentor grading.`);
   }
-  // If has short answers → status stays exam_pending
-  // Mentor must grade → then certificate generated
 
   // 7. Return result
   const answers = await findAnswersBySubmission(submission_id);
-  const submissionRecord = await import('../config/db').then(
-    (m) => m.default('exercise_submissions')
-      .where({ submission_id })
-      .first()
-  );
+  const submissionRecord = await db('exercise_submissions')
+    .where({ submission_id })
+    .first();
 
   const total   = answers.length;
-  const graded  = answers.filter((a) => a.is_correct !== null).length;
-  const correct = answers.filter((a) => a.is_correct === true).length;
-  const pending = total - graded;
+  const pending = answers.filter((a) => a.is_correct === null).length;
+  const correct = answers.filter((a: any) => a.is_correct === true || a.is_correct === 1).length;
 
-  const isFullyGraded = pending === 0;
+  const isFullyGraded = pending === 0 && total > 0;
   const score = isFullyGraded
     ? Math.round((correct / total) * 100)
     : null;
+
+  // Strip correct_answer from learner response
+  const safeAnswers = answers.map(({ correct_answer, option_a, option_b, option_c, option_d, ...rest }) => ({
+    ...rest,
+  }));
 
   return {
     submission_id,
@@ -354,9 +397,9 @@ export const submitExamService = async (
     exercise_id:     exam.exercise_id,
     score,
     submitted_at:    submissionRecord.submitted_at,
-    is_passed:       score !== null && score >= exam.passing_score,
+    is_passed:       score !== null ? score >= exam.passing_score : null,
     is_fully_graded: isFullyGraded,
-    answers,
+    answers:         safeAnswers as ExamAnswerWithQuestion[],
   };
 };
 
@@ -366,6 +409,14 @@ export const getExamResultService = async (
   user:      JwtPayload
 ): Promise<ExamResult | null> => {
 
+  console.log(`[Get Exam Result] User #${user.user_id} fetching result for course #${course_id}`);
+
+  // Verify user is enrolled in the course
+  const enrollment = await findEnrollmentByUserAndCourse(user.user_id, course_id);
+  if (!enrollment || enrollment.status === 'dropped') {
+    throw new ForbiddenError('You are not enrolled in this course');
+  }
+
   const exam = await findExamByCourse(course_id);
   if (!exam) throw new NotFoundError('No final exam for this course');
 
@@ -374,27 +425,48 @@ export const getExamResultService = async (
     exam.exercise_id
   );
 
-  if (!submission) return null;  // not submitted yet
+  if (!submission) {
+    console.log(`[Get Exam Result] No submission found`);
+    return null;  // not submitted yet
+  }
+
+  console.log(`[Get Exam Result] Latest submission: #${submission.submission_id}`);
 
   const answers   = await findAnswersBySubmission(submission.submission_id);
+
   const total     = answers.length;
-  const graded    = answers.filter((a) => a.is_correct !== null).length;
-  const correct   = answers.filter((a) => a.is_correct === true).length;
-  const pending   = total - graded;
+  const pending   = answers.filter((a: any) => a.is_correct === null).length;
+  const graded    = total - pending;
+  const correct   = answers.filter((a: any) => a.is_correct === true || a.is_correct === 1).length;
   const isFullyGraded = pending === 0 && total > 0;
   const score     = isFullyGraded
     ? Math.round((correct / total) * 100)
     : submission.score;
 
+  const is_passed = score !== null && score !== undefined
+    ? score >= exam.passing_score
+    : null;
+
+  console.log(`[Get Exam Result] Total Questions: ${total}`);
+  console.log(`[Get Exam Result] Graded: ${graded}, Correct: ${correct}`);
+  console.log(`[Get Exam Result] Pending: ${pending}`);
+  console.log(`[Get Exam Result] Score: ${score}%, Is Fully Graded: ${isFullyGraded}`);
+  console.log(`[Get Exam Result] Is Passed: ${is_passed}`);
+
+  // Strip correct_answer and options from learner view
+  const safeAnswers = answers.map(({ correct_answer, option_a, option_b, option_c, option_d, ...rest }) => ({
+    ...rest,
+  }));
+
   return {
     submission_id:   submission.submission_id,
     user_id:         user.user_id,
     exercise_id:     exam.exercise_id,
-    score,
+    score:           score ?? null,
     submitted_at:    submission.submitted_at,
-    is_passed:       score !== null && score >= exam.passing_score,
+    is_passed,
     is_fully_graded: isFullyGraded,
-    answers,
+    answers:         safeAnswers as ExamAnswerWithQuestion[],
   };
 };
 
@@ -409,7 +481,88 @@ export const getExamSubmissionsService = async (
   const exam = await findExamByCourse(course_id);
   if (!exam) throw new NotFoundError('No final exam for this course');
 
-  return findAllSubmissionsForExam(exam.exercise_id);
+  const submissions = await findAllSubmissionsForExam(exam.exercise_id, exam.passing_score);
+
+  console.log(`[Get Submissions] Retrieved ${submissions.length} submissions for exam #${exam.exercise_id}`);
+
+  return submissions;
+};
+
+// ── GET SINGLE SUBMISSION WITH ANSWERS ──────────────────────
+export const getExamSubmissionWithAnswersService = async (
+  course_id:     number,
+  submission_id: number,
+  user:          JwtPayload
+): Promise<ExamSubmissionForMentor & { answers: ExamAnswerWithQuestion[] }> => {
+
+  await verifyCourseOwnership(course_id, user);
+
+  const exam = await findExamByCourse(course_id);
+  if (!exam) throw new NotFoundError('No final exam for this course');
+
+  // Get submission
+  const submission = await db('exercise_submissions')
+    .join('users', 'exercise_submissions.user_id', 'users.user_id')
+    .where({
+      'exercise_submissions.submission_id': submission_id,
+      'exercise_submissions.exercise_id': exam.exercise_id
+    })
+    .select(
+      'exercise_submissions.*',
+      'users.name  as learner_name',
+      'users.email as learner_email'
+    )
+    .first();
+
+  if (!submission) throw new NotFoundError('Submission not found');
+
+  // Get answers with question details
+  const answers = await db('exam_answers')
+    .join('exam_questions', 'exam_answers.question_id', 'exam_questions.question_id')
+    .where('exam_answers.submission_id', submission_id)
+    .select(
+      'exam_answers.*',
+      'exam_questions.question_text',
+      'exam_questions.question_type',
+      'exam_questions.correct_answer',
+      'exam_questions.option_a',
+      'exam_questions.option_b',
+      'exam_questions.option_c',
+      'exam_questions.option_d'
+    )
+    .orderBy('exam_questions.question_order');
+
+  // Calculate grading status
+  const total   = answers.length;
+  const pending = answers.filter((a: any) => a.is_correct === null).length;
+  const graded  = total - pending;
+  const correct = answers.filter((a: any) => a.is_correct === true || a.is_correct === 1).length;
+
+  const isFullyGraded = pending === 0 && total > 0;
+  const score = isFullyGraded && total > 0
+    ? Math.round((correct / total) * 100)
+    : submission.score;
+
+  const is_passed = score !== null && score !== undefined
+    ? score >= exam.passing_score
+    : null;
+
+  console.log(`[Get Submission] Retrieved submission #${submission_id}:`);
+  console.log(`[Get Submission] Learner: ${submission.learner_name} (${submission.learner_email})`);
+  console.log(`[Get Submission] Total Questions: ${total}, Pending Grade: ${pending}`);
+
+  return {
+    submission_id:   submission.submission_id,
+    user_id:         submission.user_id,
+    learner_name:    submission.learner_name,
+    learner_email:   submission.learner_email,
+    score:           score ?? null,
+    submitted_at:    submission.submitted_at,
+    is_passed,
+    is_fully_graded: isFullyGraded,
+    pending_count:   pending,
+    answers:         answers,
+  };
 };
 
 // ── GRADE SHORT ANSWER ────────────────────────────────────────
@@ -417,44 +570,72 @@ export const gradeAnswerService = async (
   answer_id:  number,
   body:       GradeAnswerBody,
   user:       JwtPayload
-): Promise<void> => {
+): Promise<GradeAnswerResponse> => {
 
   const answer = await findAnswer(answer_id);
   if (!answer) throw new NotFoundError('Answer not found');
 
-  // Grade it
+  // Step 1: Record the grade
   await gradeAnswer(answer_id, body.is_correct, user.user_id);
+  console.log(`[Grade Answer] Graded answer #${answer_id}: is_correct=${body.is_correct}`);
 
-  // Check if all answers in this submission are now graded
+  // Step 2: Check if all answers in this submission are now graded
   const allAnswers = await findAnswersBySubmission(answer.submission_id);
-  const stillPending = allAnswers.filter(
+  const pendingCount = allAnswers.filter(
     (a) => a.is_correct === null
   ).length;
 
-  if (stillPending === 0) {
-    // All graded — calculate final score
-    const { score, is_passed, passing_score } =
-      await calculateAndSaveScore(answer.submission_id);
+  console.log(`[Grade Answer] Submission #${answer.submission_id}: ${pendingCount} answers still pending`);
 
-    // Get enrollment for this learner + course
-    const submission = await import('../config/db').then(
-      (m) => m.default('exercise_submissions')
-        .where({ submission_id: answer.submission_id })
-        .first()
-    );
+  if (pendingCount > 0) {
+    // Still pending — return to mentor
+    console.log(`[Grade Answer] Awaiting mentor to grade remaining ${pendingCount} answer(s)`);
+    return {
+      success:           true,
+      message:           'Answer graded successfully',
+      submission_status: 'pending',
+      overall_score:     null,
+      is_passed:         null,
+      pending_count:     pendingCount,
+    };
+  }
 
-    const exam = await import('../config/db').then(
-      (m) => m.default('exercises')
-        .where({ exercise_id: submission.exercise_id })
-        .first()
-    );
+  // Step 3: All graded — calculate final score
+  console.log(`[Grade Answer] All answers graded! Calculating final score...`);
 
-    const enrollment = await findEnrollmentByUserAndCourse(
-      answer.user_id,
-      exam.exam_course_id
-    );
+  const { score, is_passed, passing_score } =
+    await calculateAndSaveScore(answer.submission_id);
 
-    if (enrollment && is_passed) {
+  console.log(`[Grade Answer - Score] Submission #${answer.submission_id}:`);
+  const totalAnswers = allAnswers.length;
+  const correctCount = allAnswers.filter((a: any) => a.is_correct === true || a.is_correct === 1).length;
+  console.log(`  Correct: ${correctCount}/${totalAnswers}`);
+  console.log(`  Score: ${score}%`);
+  console.log(`  Passing Score: ${passing_score}%`);
+  console.log(`  Is Passed: ${is_passed}`);
+
+  // Step 4: Update enrollment status
+  const submission = await db('exercise_submissions')
+    .where({ submission_id: answer.submission_id })
+    .first();
+
+  if (!submission) throw new NotFoundError('Submission not found');
+
+  const exam = await db('exercises')
+    .where({ exercise_id: submission.exercise_id })
+    .first();
+
+  if (!exam) throw new NotFoundError('Exam not found');
+
+  // Get enrollment for this learner + course
+  const enrollment = await findEnrollmentByUserAndCourse(
+    answer.user_id,
+    exam.exam_course_id
+  );
+
+  if (enrollment) {
+    if (is_passed) {
+      console.log(`[Grade Answer - Enrollment] PASSED! Updated enrollment to 'completed'. Certificate generated.`);
       await updateEnrollmentStatus(
         enrollment.enrollment_id,
         'completed'
@@ -463,6 +644,22 @@ export const gradeAnswerService = async (
         answer.user_id,
         exam.exam_course_id
       );
+    } else {
+      // Failed — keep exam_pending to allow retaking
+      console.log(`[Grade Answer - Enrollment] FAILED! Score ${score}% < ${passing_score}%. Enrollment stays exam_pending.`);
+      await updateEnrollmentStatus(
+        enrollment.enrollment_id,
+        'exam_pending'
+      );
     }
   }
+
+  return {
+    success:           true,
+    message:           'Answer graded successfully',
+    submission_status: 'fully_graded',
+    overall_score:     score,
+    is_passed,
+    pending_count:     0,
+  };
 };

@@ -23,7 +23,14 @@ app.use(passport.initialize());
 
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: (origin, callback) => {
+      const allowed = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
+      if (!origin || allowed.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );

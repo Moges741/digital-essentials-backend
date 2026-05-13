@@ -64,7 +64,33 @@ export const updateExam = async (
 };
 
 export const deleteExam = async (exercise_id: number): Promise<void> => {
-  await db('exercises').where({ exercise_id }).delete();
+  console.log(`[DB] Deleting exercise ${exercise_id}`);
+  
+  // Delete all related exam answers first (handles cascade)
+  const answersDel = await db('exam_answers')
+    .whereIn('submission_id', 
+      db('exercise_submissions').select('submission_id').where({ exercise_id })
+    )
+    .delete();
+  console.log(`[DB] Deleted ${answersDel} exam answers`);
+  
+  // Delete all submissions
+  const submissionsDel = await db('exercise_submissions')
+    .where({ exercise_id })
+    .delete();
+  console.log(`[DB] Deleted ${submissionsDel} submissions`);
+  
+  // Delete all questions
+  const questionsDel = await db('exam_questions')
+    .where({ exercise_id })
+    .delete();
+  console.log(`[DB] Deleted ${questionsDel} questions`);
+  
+  // Finally delete the exercise
+  const exerciseDel = await db('exercises')
+    .where({ exercise_id })
+    .delete();
+  console.log(`[DB] Deleted ${exerciseDel} exercises`);
 };
 
 // ── QUESTIONS ─────────────────────────────────────────────────
@@ -222,7 +248,8 @@ export const updateSubmissionScore = async (
 
 // Get all submissions for a course's exam (mentor view)
 export const findAllSubmissionsForExam = async (
-  exercise_id: number
+  exercise_id: number,
+  passing_score: number = 70
 ): Promise<ExamSubmissionForMentor[]> => {
   const submissions = await db('exercise_submissions')
     .join('users', 'exercise_submissions.user_id', 'users.user_id')
@@ -242,9 +269,9 @@ export const findAllSubmissionsForExam = async (
         .select('is_correct');
 
       const total   = answers.length;
-      const graded  = answers.filter((a) => a.is_correct !== null).length;
-      const correct = answers.filter((a) => a.is_correct === true).length;
-      const pending = total - graded;
+      const pending = answers.filter((a) => a.is_correct === null).length;
+      const graded  = total - pending;
+      const correct = answers.filter((a) => a.is_correct === true || a.is_correct === 1).length;
 
       const isFullyGraded = pending === 0 && total > 0;
       const score = isFullyGraded && total > 0
@@ -258,7 +285,9 @@ export const findAllSubmissionsForExam = async (
         learner_email:   sub.learner_email,
         score:           score ?? null,
         submitted_at:    sub.submitted_at,
-        is_passed:       score !== null && score >= 70,
+        is_passed:       score !== null && score !== undefined
+                           ? score >= passing_score
+                           : null,
         is_fully_graded: isFullyGraded,
         pending_count:   pending,
       };
@@ -275,9 +304,13 @@ export const calculateAndSaveScore = async (
     .where({ submission_id })
     .select('is_correct');
 
+  console.log(`[Calculate Score] Submission ${submission_id} answers:`, answers);
+
   const total   = answers.length;
-  const correct = answers.filter((a) => a.is_correct === true).length;
+  const correct = answers.filter((a: any) => a.is_correct === true || a.is_correct === 1).length;
   const score   = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+  console.log(`[Calculate Score] Total=${total}, Correct=${correct}, Score=${score}%`);
 
   await updateSubmissionScore(submission_id, score);
 
@@ -291,6 +324,8 @@ export const calculateAndSaveScore = async (
     .first();
 
   const passing_score = exam?.passing_score ?? 70;
+
+  console.log(`[Calculate Score] Passing score: ${passing_score}, Is passed: ${score >= passing_score}`);
 
   return { score, is_passed: score >= passing_score, passing_score };
 };

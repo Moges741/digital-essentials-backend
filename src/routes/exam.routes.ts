@@ -12,6 +12,7 @@ import {
   submitExamController,
   getExamResultController,
   getSubmissionsController,
+  getSubmissionController,
   gradeAnswerController,
 } from '../controllers/exam.controller';
 import { authenticate, authorizeRoles } from '../middleware/auth.middleware';
@@ -39,8 +40,8 @@ router.post(
   createExamController
 );
 
-// ── PATCH /api/courses/:course_id/exam ────────────────────────
-router.patch(
+// ── PUT /api/courses/:course_id/exam ──────────────────────────
+router.put(
   '/',
   authenticate,
   authorizeRoles('mentor', 'administrator'),
@@ -85,8 +86,8 @@ router.post(
   addQuestionController
 );
 
-// ── PATCH /api/courses/:course_id/exam/questions/:question_id ─
-router.patch(
+// ── PUT /api/courses/:course_id/exam/questions/:question_id ──
+router.put(
   '/questions/:question_id',
   authenticate,
   authorizeRoles('mentor', 'administrator'),
@@ -141,12 +142,23 @@ router.get(
   getSubmissionsController
 );
 
-// ── PATCH /api/courses/:course_id/exam/answers/:answer_id ─────
-router.patch(
-  '/answers/:answer_id',
+// ── GET /api/courses/:course_id/exam/submissions/:submission_id ─
+router.get(
+  '/submissions/:submission_id',
+  authenticate,
+  authorizeRoles('mentor', 'administrator'),
+  [param('submission_id').isInt({ min: 1 })],
+  validate,
+  getSubmissionController
+);
+
+// ── POST /api/courses/:course_id/exam/submissions/:submission_id/answers/:answer_id/grade
+router.post(
+  '/submissions/:submission_id/answers/:answer_id/grade',
   authenticate,
   authorizeRoles('mentor', 'administrator'),
   [
+    param('submission_id').isInt({ min: 1 }),
     param('answer_id').isInt({ min: 1 }),
     body('is_correct').isBoolean().withMessage('is_correct must be true or false'),
   ],

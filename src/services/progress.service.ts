@@ -68,14 +68,19 @@ export const markCompleteService = async (
 
 // 6. Check if ALL lessons in enrollment are now complete
   const allDone = await allLessonsComplete(enrollment.enrollment_id);
+  console.log(`All lessons complete for enrollment ${enrollment.enrollment_id}: ${allDone}`);
+  
 if (allDone) {
   // Check if course has a final exam
   const { findExamByCourse } = await import('../models/exam.model');
   const finalExam = await findExamByCourse(lesson.course_id);
+  console.log(`Final exam for course ${lesson.course_id}:`, finalExam);
 
   if (finalExam) {
     // Exam exists → lock certificate until exam passed
+    console.log(`Updating enrollment ${enrollment.enrollment_id} to exam_pending`);
     await updateEnrollmentStatus(enrollment.enrollment_id, 'exam_pending');
+    console.log(`Enrollment updated to exam_pending`);
     // Do NOT generate certificate yet
   } else {
     // No exam → complete enrollment and generate certificate

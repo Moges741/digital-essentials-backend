@@ -13,6 +13,7 @@ import {
   submitExamService,
   getExamResultService,
   getExamSubmissionsService,
+  getExamSubmissionWithAnswersService,
   gradeAnswerService,
 } from '../services/exam.service';
 import { sendSuccess, sendError } from '../utils/response';
@@ -168,15 +169,28 @@ export const getSubmissionsController = async (
     e instanceof AppError ? sendError(res, e.message, e.statusCode) : next(e);
   }
 };
-
+// ── GET SINGLE SUBMISSION ────────────────────────────────────
+export const getSubmissionController = async (
+  req: Request, res: Response, next: NextFunction
+): Promise<void> => {
+  try {
+    const submission_id = parseInt(req.params.submission_id as string, 10);
+    const submission = await getExamSubmissionWithAnswersService(
+      parseCourseId(req), submission_id, req.user!
+    );
+    sendSuccess(res, { submission }, 'Submission retrieved');
+  } catch (e) {
+    e instanceof AppError ? sendError(res, e.message, e.statusCode) : next(e);
+  }
+};
 // ── GRADE ANSWER ──────────────────────────────────────────────
 export const gradeAnswerController = async (
   req: Request, res: Response, next: NextFunction
 ): Promise<void> => {
   try {
     const answer_id = parseInt(req.params.answer_id as string, 10);
-    await gradeAnswerService(answer_id, req.body, req.user!);
-    sendSuccess(res, null, 'Answer graded');
+    const result = await gradeAnswerService(answer_id, req.body, req.user!);
+    sendSuccess(res, { result }, 'Answer graded');
   } catch (e) {
     e instanceof AppError ? sendError(res, e.message, e.statusCode) : next(e);
   }
