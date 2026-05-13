@@ -18,7 +18,7 @@ export const createCourse = async (
     description:   data.description,
     duration_mins: data.duration_mins ?? 0,
     created_by,
-    is_published:  false, 
+    is_published:  true, 
   });
   return course_id;
 };

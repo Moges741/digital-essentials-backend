@@ -63,12 +63,10 @@ app.use('/api/admin',        adminRoutes);
 app.use('/api/courses/:course_id/exam', examRoutes);
 // app.use('/api/forum',       forumRoutes);
 
-// ── 404 handler ──────
 app.use((_req: Request, res: Response) => {
   sendError(res, 'Route not found', 404);
 });
 
-// ── Global error handler ────────────────────
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof AppError) {
     return sendError(res, err.message, err.statusCode);
