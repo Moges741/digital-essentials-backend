@@ -82,11 +82,15 @@ export const initializeProgress = async (
 ): Promise<void> => {
   const lessons = await db('lessons')
     .where({ course_id })
-    .select('lesson_id');
+    .select('lesson_id')
+    .orderBy('lesson_order', 'asc');
 
-  console.log(`Found ${lessons.length} lessons for course ${course_id}`);
+  console.log(`[Enrollment] Found ${lessons.length} lessons for course ${course_id}`);
 
-  if (lessons.length === 0) return;
+  if (lessons.length === 0) {
+    console.log(`[Enrollment] No lessons found for course ${course_id}`);
+    return;
+  }
 
   const progressRows = lessons.map((lesson) => ({
     user_id,
@@ -96,9 +100,28 @@ export const initializeProgress = async (
     synced_at:     null,
   }));
 
-  console.log(`Creating ${progressRows.length} progress records for enrollment ${enrollment_id}`);
-  await db('progress').insert(progressRows);
-  console.log('Progress records created successfully');
+  try {
+    console.log(`[Enrollment] Creating ${progressRows.length} progress records for enrollment ${enrollment_id}`);
+    await db('progress').insert(progressRows);
+    console.log(`[Enrollment] Successfully created all progress records`);
+  } catch (error: any) {
+    // Check if it's a duplicate key error (progress already created)
+    if (error.code === 'ER_DUP_ENTRY' || error.message?.includes('UNIQUE') || error.message?.includes('duplicate')) {
+      console.log(`[Enrollment] Some progress records already existed, continuing...`);
+      // Try to insert any that don't exist yet
+      for (const row of progressRows) {
+        try {
+          await db('progress').insert(row);
+        } catch (insertError: any) {
+          if (!insertError.message?.includes('UNIQUE') && !insertError.message?.includes('duplicate')) {
+            throw insertError;
+          }
+        }
+      }
+    } else {
+      throw error;
+    }
+  }
 };
 
 // ─── Update enrollment status ─────────────────────────────────

@@ -11,11 +11,11 @@ export interface Progress {
 // Progress with lesson details joined
 export interface ProgressWithLesson {
   progress_id?:   number;
-  user_id?:       number;
+  user_id:        number;
   lesson_id:      number;
-  enrollment_id?: number;
-  is_completed?:  boolean;
-  last_accessed?: Date;
+  enrollment_id:  number;
+  is_completed:   boolean;  // Always defined after COALESCE
+  last_accessed?: Date | null;
   synced_at?:     Date | null;
   lesson_title:   string;
   lesson_order:   number;
@@ -26,7 +26,7 @@ export interface CourseProgressSummary {
   enrollment_id:     number;
   course_id:         number;
   course_title:      string;
-  status:            string;
+  status:            'active' | 'exam_pending' | 'completed' | 'dropped';
   total_lessons:     number;
   completed_lessons: number;
   percentage:        number;
