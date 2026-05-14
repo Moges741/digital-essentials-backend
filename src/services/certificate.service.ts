@@ -134,21 +134,26 @@ export const deleteCertificateService = async (
 // Generates real PDF → uploads to Cloudinary → stores URL in DB
 export const generateCertificateService = async (
   user_id:   number,
-  course_id: number
+  course_id: number,
+  forceRegenerate = false
 ): Promise<void> => {
   console.log(`Starting certificate generation for user ${user_id}, course ${course_id}`);
 
-  // Don't generate if certificate already exists
+  // Reuse existing certificate row if present. If URL already exists, skip generation.
   const existing = await findCertificateByUserAndCourse(
     user_id,
     course_id
   );
-  if (existing) {
-    console.log('Certificate already exists, skipping generation');
+  if (!forceRegenerate && existing && existing.certificate_url) {
+    console.log('Certificate already has URL, skipping generation');
     return;
   }
 
-  console.log('Certificate does not exist, proceeding with generation');
+  if (existing) {
+    console.log('Existing certificate found without URL, regenerating file');
+  } else {
+    console.log('Certificate does not exist, proceeding with generation');
+  }
 
   // Get course details for the certificate text
   const course = await findCourseById(course_id);
@@ -166,8 +171,8 @@ export const generateCertificateService = async (
 
   console.log(`Generating certificate for ${user.name} - ${course.title}`);
 
-  // Create the certificate record first to get certificate_id
-  const certificate_id = await createCertificate({
+  // Create the certificate record only when missing, otherwise reuse it
+  const certificate_id = existing?.certificate_id ?? await createCertificate({
     user_id,
     course_id,
     certificate_url: '',  // placeholder — updated below

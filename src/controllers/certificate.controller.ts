@@ -1,6 +1,7 @@
 // src/controllers/certificate.controller.ts
 
 import { Request, Response, NextFunction } from 'express';
+import { format } from 'date-fns';
 import {
   getCertificateService,
   listMyCertificatesService,
@@ -8,10 +9,11 @@ import {
   deleteCertificateService,
 } from '../services/certificate.service';
 import { generateCertificateService } from '../services/certificate.service';
+import { generateCertificatePDF } from '../utils/certificateGenerator';
 import { findCertificateByUserAndCourse } from '../models/certificate.model';
 import { findEnrollmentByUserAndCourse }  from '../models/enrollment.model';
 import { sendSuccess, sendError }         from '../utils/response';
-import { AppError, ValidationError, NotFoundError } from '../utils/errors';
+import { AppError } from '../utils/errors';
 
 // ── ISSUE CERTIFICATE ─────────────────────────────────────────
 // Learner triggers their own certificate
@@ -197,17 +199,31 @@ export const downloadCertificateController = async (
         : req.params.certificate_id,
       10
     );
-    const certificate    = await getCertificateService(
+    const certificate = await getCertificateService(
       certificate_id,
       req.user!
     );
 
-    if (!certificate.certificate_url) {
-      sendError(res, 'Certificate file not yet generated', 404);
-      return;
-    }
+    const disposition = req.query.disposition === 'inline'
+      ? 'inline'
+      : 'attachment';
 
-    res.redirect(certificate.certificate_url);
+    const pdfBuffer = await generateCertificatePDF({
+      learnerName: certificate.learner_name ?? certificate.user_name ?? 'Learner',
+      courseName: certificate.course_title,
+      issuedDate: format(new Date(certificate.issued_at), 'MMMM dd, yyyy'),
+      certificateId: certificate.certificate_id,
+    });
+
+    const safeCourseTitle = (certificate.course_title ?? 'Certificate')
+      .replace(/[^a-zA-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    const fileName = `${safeCourseTitle || 'Certificate'}_${certificate.certificate_id}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Length', pdfBuffer.length.toString());
+    res.setHeader('Content-Disposition', `${disposition}; filename="${fileName}"`);
+    res.status(200).send(pdfBuffer);
   } catch (error) {
     if (error instanceof AppError) {
       sendError(res, error.message, error.statusCode);

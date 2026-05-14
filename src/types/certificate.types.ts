@@ -7,9 +7,11 @@ export interface Certificate {
 }
 
 export interface CertificateWithDetails extends Certificate {
-  course_title: string;
-  user_name:    string;
-  user_email:   string;
+  course_title:  string;
+  learner_name?: string;
+  creator_name?: string;
+  user_name?:    string;
+  user_email?:   string;
 }
 
 export interface IssueCertificateBody {

@@ -27,6 +27,7 @@ export const findCertificateByUserAndCourse = async (
     .select(
       'certificates.*',
       'courses.title  as course_title',
+      'users.name     as learner_name',
       'users.name     as creator_name'
     )
     .first();
@@ -43,6 +44,7 @@ export const findCertificateById = async (
     .select(
       'certificates.*',
       'courses.title as course_title',
+      'users.name as learner_name',
       'users.name as user_name',
       'users.email as user_email'
     )
@@ -54,11 +56,14 @@ export const listCertificatesByUser = async (
   user_id: number
 ): Promise<CertificateWithDetails[]> => {
   return db('certificates')
+    .join('users', 'certificates.user_id', 'users.user_id')
     .join('courses', 'certificates.course_id', 'courses.course_id')
     .where('certificates.user_id', user_id)
     .select(
       'certificates.*',
-      'courses.title as course_title'
+      'courses.title as course_title',
+      'users.name as learner_name',
+      'users.name as creator_name'
     )
     .orderBy('certificates.issued_at', 'desc');
 };

@@ -13,7 +13,7 @@ export const generateCertificatePDF = (
 ): Promise<Buffer> => {
   return new Promise((resolve, reject) => {
 
-    // Create PDF in landscape orientation
+      // Create PDF in landscape orientation
     const doc = new PDFDocument({
       layout: 'landscape',
       size:   'A4',
@@ -26,149 +26,154 @@ export const generateCertificatePDF = (
     doc.on('end',   () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    const W = 841.89;  // A4 landscape width  (points)
-    const H = 595.28;  // A4 landscape height (points)
+    const W = 841.89;
+    const H = 595.28;
 
-    // ── Background ──────────────────────────────────────
-    // Deep blue background
-    doc.rect(0, 0, W, H).fill('#1E3A5F');
+    const navy = '#0D2244';
+    const gold = '#C9A04C';
+    const ink = '#132A4A';
+    const soft = '#FAF8F2';
+    const line = '#D9C48A';
 
-    // Lighter inner border area
-    const margin = 30;
-    doc.roundedRect(margin, margin, W - margin * 2, H - margin * 2, 8)
-       .fill('#FFFFFF');
+    // Background and outer frame
+    doc.rect(0, 0, W, H).fill(navy);
+    doc.rect(18, 18, W - 36, H - 36).fill(soft);
+    doc.rect(28, 28, W - 56, H - 56).lineWidth(2.2).stroke(gold);
+    doc.rect(34, 34, W - 68, H - 68).lineWidth(0.8).stroke(line);
 
-    // ── Decorative border lines ──────────────────────────
-    doc.rect(margin + 8, margin + 8, W - (margin + 8) * 2, H - (margin + 8) * 2)
-       .lineWidth(1.5)
-       .stroke('#1E3A5F');
+    // Rectangular header band
+    doc.rect(42, 42, W - 84, 82).fill(navy);
+    doc.rect(52, 52, W - 104, 62).lineWidth(1.3).stroke(gold);
 
-    // ── Top accent bar ───────────────────────────────────
-    doc.rect(margin + 8, margin + 8, W - (margin + 8) * 2, 6)
-       .fill('#1E3A5F');
-
-    // ── Bottom accent bar ────────────────────────────────
-    doc.rect(margin + 8, H - margin - 14, W - (margin + 8) * 2, 6)
-       .fill('#1E3A5F');
-
-    // ── Company name ─────────────────────────────────────
     doc.font('Helvetica-Bold')
-       .fontSize(13)
-       .fillColor('#2563EB')
-       .text('DIGITAL ESSENTIALS PLATFORM', 0, 62, {
-         align: 'center',
-         width: W,
-       });
+      .fontSize(26)
+      .fillColor('#FFFFFF')
+      .text('Digital Essentials Platform', 60, 63, {
+        align: 'center',
+        width: W - 120,
+      });
 
-    // ── Subtitle ─────────────────────────────────────────
     doc.font('Helvetica')
-       .fontSize(9)
-       .fillColor('#6B7280')
-       .text('Jimma Institute of Technology · Bosa Addis Kebele, Jimma, Ethiopia', 0, 80, {
-         align: 'center',
-         width: W,
-       });
+      .fontSize(11)
+      .fillColor('#F2D999')
+      .text('Certificate of Completion', 60, 92, {
+        align: 'center',
+        width: W - 120,
+        characterSpacing: 2.4,
+      });
 
-    // ── Divider line ─────────────────────────────────────
-    doc.moveTo(W * 0.25, 102)
-       .lineTo(W * 0.75, 102)
-       .lineWidth(0.5)
-       .stroke('#D1D5DB');
+    // Main certificate panel (single rectangular panel)
+    doc.rect(70, 142, W - 140, 315).fill('#FFFFFF');
+    doc.rect(76, 148, W - 152, 303).lineWidth(1.4).stroke(gold);
 
-    // ── "Certificate of Completion" label ────────────────
+    // Thin side accents only
+    doc.rect(86, 164, 2, 271).fill(gold);
+    doc.rect(W - 88, 164, 2, 271).fill(gold);
+
+    // Required heading blocks
     doc.font('Helvetica')
-       .fontSize(11)
-       .fillColor('#9CA3AF')
-       .text('CERTIFICATE OF COMPLETION', 0, 118, {
-         align:          'center',
-         width:          W,
-         characterSpacing: 3,
-       });
+      .fontSize(12)
+      .fillColor('#5A6474')
+      .text('This certificate is proudly presented to', 0, 176, {
+        align: 'center',
+        width: W,
+      });
 
-    // ── "This certifies that" ────────────────────────────
+    doc.font('Times-Italic')
+      .fontSize(34)
+      .fillColor(ink)
+      .text(data.learnerName, 185, 205, {
+        align: 'center',
+        width: W - 370,
+      });
+
+    doc.moveTo(210, 246)
+      .lineTo(W - 210, 246)
+      .lineWidth(0.8)
+      .stroke(line);
+
     doc.font('Helvetica')
-       .fontSize(12)
-       .fillColor('#4B5563')
-       .text('This certifies that', 0, 155, {
-         align: 'center',
-         width: W,
-       });
+      .fontSize(12)
+      .fillColor('#5A6474')
+      .text('for successfully completing the course', 0, 264, {
+        align: 'center',
+        width: W,
+      });
 
-    // ── Learner name ─────────────────────────────────────
-    // The most prominent element on the certificate
     doc.font('Helvetica-Bold')
-       .fontSize(38)
-       .fillColor('#1E3A5F')
-       .text(data.learnerName, 0, 175, {
-         align: 'center',
-         width: W,
-       });
+      .fontSize(22)
+      .fillColor(ink)
+      .text(data.courseName, 142, 298, {
+        align: 'center',
+        width: W - 284,
+      });
 
-    // ── Underline under name ─────────────────────────────
-    const nameWidth = doc.widthOfString(data.learnerName);
-    const nameX     = (W - Math.min(nameWidth, W * 0.7)) / 2;
-    doc.moveTo(nameX, 222)
-       .lineTo(W - nameX, 222)
-       .lineWidth(1)
-       .stroke('#2563EB');
+    doc.moveTo(170, 333)
+      .lineTo(W - 170, 333)
+      .lineWidth(0.8)
+      .stroke(line);
 
-    // ── "has successfully completed" ─────────────────────
     doc.font('Helvetica')
-       .fontSize(12)
-       .fillColor('#4B5563')
-       .text('has successfully completed the course', 0, 235, {
-         align: 'center',
-         width: W,
-       });
+      .fontSize(11.5)
+      .fillColor('#5A6474')
+      .text('through the Digital Essentials Platform with dedication and outstanding achievement.', 110, 352, {
+        align: 'center',
+        width: W - 220,
+      });
 
-    // ── Course name ───────────────────────────────────────
+    // Sponsors (no extra rectangle around text)
+    doc.moveTo(250, 389).lineTo(W - 250, 389).lineWidth(0.8).stroke(line);
     doc.font('Helvetica-Bold')
-       .fontSize(22)
-       .fillColor('#1D4ED8')
-       .text(data.courseName, 60, 260, {
-         align: 'center',
-         width: W - 120,
-       });
+      .fontSize(11)
+      .fillColor(gold)
+      .text('Sponsored by', 0, 397, { align: 'center', width: W });
+    doc.font('Helvetica-Bold')
+      .fontSize(12.5)
+      .fillColor(ink)
+      .text('Jimma Institute of Technology', 0, 410, { align: 'center', width: W });
+    doc.font('Helvetica-Bold')
+      .fontSize(11.5)
+      .fillColor(ink)
+      .text('TCBTP Team', 0, 425, { align: 'center', width: W });
 
-    // ── Decorative stars ──────────────────────────────────
-    const starY = 310;
-    ['★', '★', '★'].forEach((star, i) => {
-      doc.font('Helvetica')
-         .fontSize(14)
-         .fillColor('#F59E0B')
-         .text(star, W / 2 - 30 + i * 20, starY, { width: 20, align: 'center' });
-    });
+    // Footer (clean section with only guide lines)
+    doc.moveTo(70, 468).lineTo(W - 70, 468).lineWidth(1).stroke(gold);
+    doc.moveTo(285, 474).lineTo(285, 542).lineWidth(0.8).stroke(line);
+    doc.moveTo(556, 474).lineTo(556, 542).lineWidth(0.8).stroke(line);
 
-    // ── Issue date and certificate ID ─────────────────────
+    // Left footer sign block
     doc.font('Helvetica')
-       .fontSize(10)
-       .fillColor('#6B7280')
-       .text(`Issued on: ${data.issuedDate}`, W / 2 - 200, 345, {
-         width: 200,
-         align: 'right',
-       });
+      .fontSize(9.5)
+      .fillColor('#5A6474')
+      .text('Instructor', 86, 480, { width: 180, align: 'center' });
+    doc.moveTo(95, 503).lineTo(255, 503).lineWidth(0.8).stroke('#70839C');
 
+    // Center footer issue block
+    doc.font('Helvetica-Bold')
+      .fontSize(10.5)
+      .fillColor(ink)
+      .text(`Date of Issue: ${data.issuedDate}`, 300, 482, {
+        width: 240,
+        align: 'center',
+      });
+    doc.font('Helvetica-Bold')
+      .fontSize(10.5)
+      .fillColor(ink)
+      .text(`Certificate ID: #${String(data.certificateId).padStart(6, '0')}`, 300, 502, {
+        width: 240,
+        align: 'center',
+      });
+
+    // Right footer sign block
     doc.font('Helvetica')
-       .fontSize(10)
-       .fillColor('#6B7280')
-       .text(`Certificate ID: #${String(data.certificateId).padStart(6, '0')}`, W / 2 + 10, 345, {
-         width: 200,
-         align: 'left',
-       });
+      .fontSize(9.5)
+      .fillColor('#5A6474')
+      .text('Platform Director', 576, 480, { width: 180, align: 'center' });
+    doc.moveTo(585, 503).lineTo(745, 503).lineWidth(0.8).stroke('#70839C');
 
-    // ── Bottom signature line ─────────────────────────────
-    doc.moveTo(W * 0.3, 395)
-       .lineTo(W * 0.7, 395)
-       .lineWidth(0.5)
-       .stroke('#9CA3AF');
-
-    doc.font('Helvetica')
-       .fontSize(9)
-       .fillColor('#9CA3AF')
-       .text('Digital Essentials Platform', 0, 402, {
-         align: 'center',
-         width: W,
-       });
+    // Bottom band to close rectangular composition
+    doc.rect(42, 548, W - 84, 14).fill(navy);
+    doc.rect(52, 551, W - 104, 8).fill(gold);
 
     doc.end();
   });
