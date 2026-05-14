@@ -3,6 +3,8 @@ import db from '../config/db';
 import { sendSuccess, sendError } from '../utils/response';
 import { SafeUser } from '../models/user.model';
 import { CourseWithCreator } from '../types/course.types';
+import { listAllFeedbackService } from '../services/feedback.service';
+import { AppError } from '../utils/errors';
 
 // ─── Get all users (admin only) ──────────────────────────────
 export const getAllUsers = async (
@@ -139,5 +141,23 @@ export const toggleCoursePublish = async (
     sendSuccess(res, { course: courseWithCreator }, 'Course status updated successfully');
   } catch (error) {
     next(error);
+  }
+};
+
+// ─── Get all course feedback (admin only) ─────────────────────
+export const getAllCourseFeedback = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const feedback = await listAllFeedbackService(req.user!);
+    sendSuccess(res, { feedback }, 'All feedback retrieved successfully');
+  } catch (error) {
+    if (error instanceof AppError) {
+      sendError(res, error.message, error.statusCode);
+    } else {
+      next(error);
+    }
   }
 };

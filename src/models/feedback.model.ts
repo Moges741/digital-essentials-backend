@@ -96,3 +96,21 @@ export const listFeedbackByCourse = async (
     )
     .orderBy('feedback.submitted_at', 'desc');
 };
+
+// ─── List all feedback (admin view) ──────────────
+export const listAllFeedback = async (): Promise<(FeedbackWithDetails & { creator_name: string })[]> => {
+  return db('feedback')
+    .join('enrollments', 'feedback.enrollment_id', 'enrollments.enrollment_id')
+    .join('users as learners', 'enrollments.user_id', 'learners.user_id')
+    .join('courses', 'enrollments.course_id', 'courses.course_id')
+    .join('users as creators', 'courses.created_by', 'creators.user_id')
+    .select(
+      'feedback.*',
+      'courses.course_id',
+      'courses.title as course_title',
+      'learners.name as user_name',
+      'learners.email as user_email',
+      'creators.name as creator_name'
+    )
+    .orderBy('feedback.submitted_at', 'desc');
+};

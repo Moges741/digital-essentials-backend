@@ -4,6 +4,7 @@ import {
   updateUserRole,
   getAllCourses,
   toggleCoursePublish,
+  getAllCourseFeedback,
 } from '../controllers/admin.controller';
 import { authenticate, authorizeRoles } from '../middleware/auth.middleware';
 
@@ -20,5 +21,8 @@ router.patch('/users/:user_id/role', updateUserRole);
 // ─── Course management ────────────────────────────────────────
 router.get('/courses', getAllCourses);
 router.patch('/courses/:course_id/publish', toggleCoursePublish);
+
+// ─── Feedback management ──────────────────────────────────────
+router.get('/feedback', getAllCourseFeedback);
 
 export default router;

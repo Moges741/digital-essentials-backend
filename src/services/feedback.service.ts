@@ -6,6 +6,7 @@ import {
   deleteFeedback,
   listFeedbackByCourse,
   listMyFeedback,
+  listAllFeedback,
 } from '../models/feedback.model';
 import { findEnrollmentById } from '../models/enrollment.model';
 import { findCourseById } from '../models/course.model';
@@ -127,4 +128,14 @@ export const listMyFeedbackService = async (
   user: JwtPayload
 ): Promise<FeedbackWithDetails[]> => {
   return listMyFeedback(user.user_id);
+};
+
+// ─── LIST ALL FEEDBACK (admin view) ───────────────
+export const listAllFeedbackService = async (
+  user: JwtPayload
+): Promise<(FeedbackWithDetails & { creator_name: string })[]> => {
+  if (user.role !== 'administrator') {
+    throw new ForbiddenError('Only administrators can view all feedback');
+  }
+  return listAllFeedback();
 };
