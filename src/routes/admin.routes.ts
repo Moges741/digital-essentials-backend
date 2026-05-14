@@ -5,6 +5,9 @@ import {
   getAllCourses,
   toggleCoursePublish,
   getAllCourseFeedback,
+  getAllCertificates,
+  updateCertificate,
+  deleteCertificate,
 } from '../controllers/admin.controller';
 import { authenticate, authorizeRoles } from '../middleware/auth.middleware';
 
@@ -24,5 +27,10 @@ router.patch('/courses/:course_id/publish', toggleCoursePublish);
 
 // ─── Feedback management ──────────────────────────────────────
 router.get('/feedback', getAllCourseFeedback);
+
+// ─── Certificate management ───────────────────────────────────
+router.get('/certificates', getAllCertificates);
+router.patch('/certificates/:certificate_id', updateCertificate);
+router.delete('/certificates/:certificate_id', deleteCertificate);
 
 export default router;

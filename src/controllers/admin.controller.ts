@@ -161,3 +161,155 @@ export const getAllCourseFeedback = async (
     }
   }
 };
+
+// ─── Get all certificates (admin only) ───────────────────────
+export const getAllCertificates = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const certificates = await db('certificates')
+      .join('users', 'certificates.user_id', 'users.user_id')
+      .join('courses', 'certificates.course_id', 'courses.course_id')
+      .select(
+        'certificates.*',
+        'users.name as learner_name',
+        'users.email as learner_email',
+        'courses.title as course_title'
+      )
+      .orderBy('certificates.issued_at', 'desc');
+
+    sendSuccess(res, { certificates }, 'Certificates retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── Update certificate (admin only) ─────────────────────────
+export const updateCertificate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { certificate_id } = req.params;
+    const certId = parseInt(Array.isArray(certificate_id) ? certificate_id[0] : certificate_id, 10);
+
+    if (Number.isNaN(certId) || certId < 1) {
+      sendError(res, 'Invalid certificate ID', 400);
+      return;
+    }
+
+    const existing = await db('certificates').where({ certificate_id: certId }).first();
+    if (!existing) {
+      sendError(res, 'Certificate not found', 404);
+      return;
+    }
+
+    const updates: Record<string, unknown> = {};
+
+    if (req.body.user_id !== undefined) {
+      const userId = parseInt(String(req.body.user_id), 10);
+      if (Number.isNaN(userId) || userId < 1) {
+        sendError(res, 'Invalid user_id', 400);
+        return;
+      }
+
+      const userExists = await db('users').where({ user_id: userId }).first();
+      if (!userExists) {
+        sendError(res, 'Selected user does not exist', 404);
+        return;
+      }
+      updates.user_id = userId;
+    }
+
+    if (req.body.course_id !== undefined) {
+      const courseId = parseInt(String(req.body.course_id), 10);
+      if (Number.isNaN(courseId) || courseId < 1) {
+        sendError(res, 'Invalid course_id', 400);
+        return;
+      }
+
+      const courseExists = await db('courses').where({ course_id: courseId }).first();
+      if (!courseExists) {
+        sendError(res, 'Selected course does not exist', 404);
+        return;
+      }
+      updates.course_id = courseId;
+    }
+
+    if (req.body.issued_at !== undefined) {
+      const issuedAt = new Date(String(req.body.issued_at));
+      if (Number.isNaN(issuedAt.getTime())) {
+        sendError(res, 'Invalid issued_at date', 400);
+        return;
+      }
+      updates.issued_at = issuedAt;
+    }
+
+    if (req.body.certificate_url !== undefined) {
+      const certificateUrl = String(req.body.certificate_url).trim();
+      updates.certificate_url = certificateUrl === '' ? null : certificateUrl;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      sendError(res, 'No valid fields provided for update', 400);
+      return;
+    }
+
+    await db('certificates')
+      .where({ certificate_id: certId })
+      .update(updates);
+
+    const certificate = await db('certificates')
+      .join('users', 'certificates.user_id', 'users.user_id')
+      .join('courses', 'certificates.course_id', 'courses.course_id')
+      .where('certificates.certificate_id', certId)
+      .select(
+        'certificates.*',
+        'users.name as learner_name',
+        'users.email as learner_email',
+        'courses.title as course_title'
+      )
+      .first();
+
+    sendSuccess(res, { certificate }, 'Certificate updated successfully');
+  } catch (error: any) {
+    if (error?.code === 'ER_DUP_ENTRY') {
+      sendError(res, 'A certificate for this user and course already exists', 409);
+      return;
+    }
+    next(error);
+  }
+};
+
+// ─── Delete certificate (admin only) ─────────────────────────
+export const deleteCertificate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { certificate_id } = req.params;
+    const certId = parseInt(Array.isArray(certificate_id) ? certificate_id[0] : certificate_id, 10);
+
+    if (Number.isNaN(certId) || certId < 1) {
+      sendError(res, 'Invalid certificate ID', 400);
+      return;
+    }
+
+    const deleted = await db('certificates')
+      .where({ certificate_id: certId })
+      .delete();
+
+    if (!deleted) {
+      sendError(res, 'Certificate not found', 404);
+      return;
+    }
+
+    sendSuccess(res, null, 'Certificate deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
