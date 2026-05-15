@@ -16,7 +16,14 @@ router.post(
     body('name')
       .trim()
       .notEmpty().withMessage('Name is required')
-      .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
+      .isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters')
+      .matches(/^[a-zA-Z\s-]+$/).withMessage('Name can only contain letters, spaces, and hyphens')
+      .custom((value) => {
+        if (/^\d+$/.test(value)) {
+          throw new Error('Name cannot be only numbers');
+        }
+        return true;
+      }),
 
     body('email')
       .trim()
@@ -25,7 +32,11 @@ router.post(
 
     body('password')
       .notEmpty().withMessage('Password is required')
-      .isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+      .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+      .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
+      .matches(/[a-z]/).withMessage('Password must contain at least one lowercase letter')
+      .matches(/\d/).withMessage('Password must contain at least one number')
+      .matches(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/).withMessage('Password must contain at least one special character'),
 
     body('role')
       .notEmpty().withMessage('Role is required')
