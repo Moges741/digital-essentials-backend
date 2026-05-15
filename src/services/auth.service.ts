@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import {env} from '../config/env';
-import { generateVerificationToken, sendVerificationEmail } from './email.service';
+import { generateVerificationToken, sendVerificationEmail, sendPasswordResetEmail } from './email.service';
 import { ForbiddenError } from '../utils/errors';
 
 import {
@@ -15,6 +15,10 @@ import {
   updateUserVerificationToken,
   findUserByVerificationTokenHash,
   clearUserVerificationToken,
+  updateUserPasswordResetToken,
+  findUserByPasswordResetTokenHash,
+  updateUserPassword,
+  clearPasswordResetToken,
 } from '../models/user.model';
 
 
@@ -131,6 +135,28 @@ export const resendVerificationEmail = async (email: string): Promise<void> => {
     email: user.email,
     token,
   });
+};
+
+export const forgotPassword = async (email: string): Promise<void> => {
+  const user = await findUserByEmail(email);
+  if (!user) throw new NotFoundError('User not found');
+  if (!user.is_active) throw new ValidationError('Account is deactivated');
+
+  const { token, tokenHash } = generateVerificationToken();
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+  await updateUserPasswordResetToken(user.user_id, tokenHash, expiresAt);
+  await sendPasswordResetEmail({ name: user.name, email: user.email, token });
+};
+
+export const resetPassword = async (token: string, newPassword: string): Promise<void> => {
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const user = await findUserByPasswordResetTokenHash(tokenHash);
+  if (!user) throw new ValidationError('Reset token is invalid or has expired');
+
+  const password_hash = await bcrypt.hash(newPassword, 10);
+  await updateUserPassword(user.user_id, password_hash);
+  await clearPasswordResetToken(user.user_id);
 };
 
 

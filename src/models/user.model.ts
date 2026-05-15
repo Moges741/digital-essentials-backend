@@ -78,6 +78,41 @@ export const findUserByVerificationTokenHash = async (
     .first();
 };
 
+export const updateUserPasswordResetToken = async (
+  user_id: number,
+  tokenHash: string,
+  expiresAt: Date
+): Promise<void> => {
+  await db('users')
+    .where({ user_id })
+    .update({
+      password_reset_token_hash: tokenHash,
+      password_reset_expires_at: expiresAt,
+      updated_at: db.fn.now(),
+    });
+};
+
+export const findUserByPasswordResetTokenHash = async (
+  tokenHash: string
+): Promise<User | undefined> => {
+  return db('users')
+    .where({ password_reset_token_hash: tokenHash })
+    .andWhere('password_reset_expires_at', '>', db.fn.now())
+    .first();
+};
+
+export const updateUserPassword = async (user_id: number, password_hash: string): Promise<void> => {
+  await db('users')
+    .where({ user_id })
+    .update({ password_hash, updated_at: db.fn.now() });
+};
+
+export const clearPasswordResetToken = async (user_id: number): Promise<void> => {
+  await db('users')
+    .where({ user_id })
+    .update({ password_reset_token_hash: null, password_reset_expires_at: null, updated_at: db.fn.now() });
+};
+
 // ─── Create learner profile ──────────────
 export const createLearnerProfile = async (user_id: number): Promise<void> => {
   await db('learner_profiles').insert({

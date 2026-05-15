@@ -65,3 +65,31 @@ export const sendVerificationEmail = async (params: {
     text: `Hi ${params.name}, verify your email: ${verificationLink}`,
   });
 };
+
+export const sendPasswordResetEmail = async (params: {
+  name: string;
+  email: string;
+  token: string;
+}): Promise<void> => {
+  const transporter = createTransporter();
+  const resetLink = `${env.email.frontendUrl}/reset-password?token=${encodeURIComponent(params.token)}`;
+
+  await transporter.sendMail({
+    from: env.email.from,
+    to: params.email,
+    subject: 'Reset your password',
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6;">
+        <h2 style="margin-bottom: 16px;">Reset your password</h2>
+        <p>Hi ${params.name},</p>
+        <p>We received a request to reset your password. Click the button below to set a new password.</p>
+        <p style="margin: 24px 0;">
+          <a href="${resetLink}" style="background:#2563eb;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;display:inline-block;">Reset Password</a>
+        </p>
+        <p>If you did not request this, you can ignore this email.</p>
+        <p>This link expires in 30 minutes.</p>
+      </div>
+    `,
+    text: `Hi ${params.name}, reset your password: ${resetLink}`,
+  });
+};

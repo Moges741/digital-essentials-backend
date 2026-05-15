@@ -3,6 +3,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import { register, login, verifyEmail, resendVerification } from '../controllers/auth.controller';
+import { forgotPasswordController, resetPasswordController } from '../controllers/auth.controller';
 import { validate } from '../middleware/validate.middleware';
 import { googleAuth, googleAuthCallback } from '../controllers/google-auth.controller';
 import passport from 'passport';
@@ -88,6 +89,35 @@ router.post(
   ],
   validate,
   resendVerification
+);
+
+// ─── POST /api/auth/forgot-password ──────────────────────────
+router.post(
+  '/forgot-password',
+  [
+    body('email')
+      .trim()
+      .notEmpty().withMessage('Email is required')
+      .isEmail().withMessage('Please provide a valid email'),
+  ],
+  validate,
+  forgotPasswordController
+);
+
+// ─── POST /api/auth/reset-password ───────────────────────────
+router.post(
+  '/reset-password',
+  [
+    body('token').notEmpty().withMessage('Reset token is required'),
+    body('password').notEmpty().withMessage('Password is required')
+      .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+      .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
+      .matches(/[a-z]/).withMessage('Password must contain at least one lowercase letter')
+      .matches(/\d/).withMessage('Password must contain at least one number')
+      .matches(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>\/?]/).withMessage('Password must contain at least one special character'),
+  ],
+  validate,
+  resetPasswordController
 );
 // ─── GET /api/auth/google ───────────────────────────────────
 router.get('/google', googleAuth);
