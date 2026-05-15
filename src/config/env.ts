@@ -47,7 +47,15 @@ export const env = {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     redirectUrl: process.env.GOOGLE_REDIRECT_URL!,
   },
-   resend: {
+  email: {
+    smtpHost: process.env.SMTP_HOST,
+    smtpPort: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined,
+    smtpUser: process.env.SMTP_USER,
+    smtpPass: process.env.SMTP_PASS,
+    from: process.env.SMTP_FROM,
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  },
+  resend: {
     apiKey: process.env.RESEND_API_KEY!,
   },
 };

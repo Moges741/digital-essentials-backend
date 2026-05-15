@@ -8,6 +8,9 @@ export interface User {
   password_hash: string;
   role: 'learner' | 'mentor' | 'administrator';
   is_active: boolean;
+  email_verified?: boolean;
+  email_verification_token_hash?: string | null;
+  email_verification_expires_at?: Date | string | null;
   created_at: Date;
   updated_at: Date;
   google_id?: string | null;
@@ -35,9 +38,44 @@ export const createUser = async (userData: {
   email: string;
   password_hash: string;
   role: 'learner' | 'mentor' | 'administrator';
+  email_verified?: boolean;
 }): Promise<number> => {
   const [user_id] = await db('users').insert(userData);
   return user_id;
+};
+
+export const updateUserVerificationToken = async (
+  user_id: number,
+  tokenHash: string,
+  expiresAt: Date
+): Promise<void> => {
+  await db('users')
+    .where({ user_id })
+    .update({
+      email_verification_token_hash: tokenHash,
+      email_verification_expires_at: expiresAt,
+      updated_at: db.fn.now(),
+    });
+};
+
+export const clearUserVerificationToken = async (user_id: number): Promise<void> => {
+  await db('users')
+    .where({ user_id })
+    .update({
+      email_verified: true,
+      email_verification_token_hash: null,
+      email_verification_expires_at: null,
+      updated_at: db.fn.now(),
+    });
+};
+
+export const findUserByVerificationTokenHash = async (
+  tokenHash: string
+): Promise<User | undefined> => {
+  return db('users')
+    .where({ email_verification_token_hash: tokenHash })
+    .andWhere('email_verification_expires_at', '>', db.fn.now())
+    .first();
 };
 
 // ─── Create learner profile ──────────────

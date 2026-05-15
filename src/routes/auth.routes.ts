@@ -2,7 +2,7 @@
 
 import { Router } from 'express';
 import { body } from 'express-validator';
-import { register, login } from '../controllers/auth.controller';
+import { register, login, verifyEmail, resendVerification } from '../controllers/auth.controller';
 import { validate } from '../middleware/validate.middleware';
 import { googleAuth, googleAuthCallback } from '../controllers/google-auth.controller';
 import passport from 'passport';
@@ -64,6 +64,30 @@ router.post(
   ],
   validate,
   login
+);
+
+// ─── POST /api/auth/verify-email ─────────────────────────────
+router.post(
+  '/verify-email',
+  [
+    body('token')
+      .notEmpty().withMessage('Verification token is required'),
+  ],
+  validate,
+  verifyEmail
+);
+
+// ─── POST /api/auth/resend-verification ──────────────────────
+router.post(
+  '/resend-verification',
+  [
+    body('email')
+      .trim()
+      .notEmpty().withMessage('Email is required')
+      .isEmail().withMessage('Please provide a valid email'),
+  ],
+  validate,
+  resendVerification
 );
 // ─── GET /api/auth/google ───────────────────────────────────
 router.get('/google', googleAuth);

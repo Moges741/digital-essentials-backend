@@ -1,9 +1,9 @@
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import {env} from '../config/env';
-// import { sendVerificationEmail } from './email.service';
-// import {  createVerificationToken, verifyTokenAndGetUser } from '../models/user.model';
-// import crypto from 'crypto';
+import { generateVerificationToken, sendVerificationEmail } from './email.service';
+import { ForbiddenError } from '../utils/errors';
 
 import {
     emailExists,
@@ -11,7 +11,10 @@ import {
     createLearnerProfile,
     createMentorProfile,
     findUserByEmail,
-    findUserByIdFull
+    findUserById,
+  updateUserVerificationToken,
+  findUserByVerificationTokenHash,
+  clearUserVerificationToken,
 } from '../models/user.model';
 
 
@@ -43,7 +46,7 @@ export const generateToken = (user: SafeUser): string => {
   });
 };
   
-export const registerUser = async (body: RegisterBody): Promise<AuthResponse> => {
+export const registerUser = async (body: RegisterBody): Promise<{ user: SafeUser }> => {
     const {name, email, password , role, specialization, qualifications} = body;
     if(role === 'mentor' && !specialization) {
         throw new ValidationError('Mentors must provide a specialization');
@@ -56,8 +59,10 @@ export const registerUser = async (body: RegisterBody): Promise<AuthResponse> =>
 
 
     const password_hash = await bcrypt.hash(password, 10);
+    const { token, tokenHash } = generateVerificationToken();
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
-    const user_id = await createUser({name, email, password_hash, role});
+    const user_id = await createUser({name, email, password_hash, role, email_verified: false});
 
     if(role === 'learner'){
         await createLearnerProfile(user_id);
@@ -67,14 +72,66 @@ export const registerUser = async (body: RegisterBody): Promise<AuthResponse> =>
         await createMentorProfile(user_id, specialization!, qualifications);    
     }
 
-    const user = await findUserByIdFull(user_id);
-    const token = generateToken(user!);
+    await updateUserVerificationToken(user_id, tokenHash, expiresAt);
+
+    const userForEmail = await findUserById(user_id);
+    if (!userForEmail) {
+        throw new NotFoundError('User not found after registration');
+    }
+
+    await sendVerificationEmail({
+      name: userForEmail.name,
+      email: userForEmail.email,
+      token,
+    });
 
     return {
-        user: user!,
-        token
+        user: userForEmail,
     };
 }
+
+export const verifyEmailAddress = async (token: string): Promise<AuthResponse> => {
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const user = await findUserByVerificationTokenHash(tokenHash);
+
+  if (!user) {
+    throw new ValidationError('Verification link is invalid or has expired');
+  }
+
+  await clearUserVerificationToken(user.user_id);
+
+  const verifiedUser = await findUserById(user.user_id);
+  if (!verifiedUser) {
+    throw new NotFoundError('User not found');
+  }
+
+  return {
+    user: verifiedUser,
+    token: generateToken(verifiedUser),
+  };
+};
+
+export const resendVerificationEmail = async (email: string): Promise<void> => {
+  const user = await findUserByEmail(email);
+
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+
+  if (user.email_verified) {
+    throw new ValidationError('This email is already verified');
+  }
+
+  const { token, tokenHash } = generateVerificationToken();
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+  await updateUserVerificationToken(user.user_id, tokenHash, expiresAt);
+  await sendVerificationEmail({
+    name: user.name,
+    email: user.email,
+    token,
+  });
+};
 
 
 // ─── LOGIN ─────
@@ -90,6 +147,10 @@ export const loginUser = async (body: LoginBody): Promise<AuthResponse> => {
 
   if (!user.is_active) {
     throw new UnauthorizedError('Your account has been deactivated');
+  }
+
+  if (!user.email_verified) {
+    throw new ForbiddenError('Please verify your email before logging in');
   }
 
   const passwordMatch = await bcrypt.compare(password, user.password_hash);

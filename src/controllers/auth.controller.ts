@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { registerUser, loginUser } from '../services/auth.service';
+import { registerUser, loginUser, verifyEmailAddress, resendVerificationEmail } from '../services/auth.service';
 import { sendSuccess, sendError } from '../utils/response';
 import { AppError } from '../utils/errors';
-import { RegisterBody, LoginBody } from '../types/auth.types';
+import { RegisterBody, LoginBody, VerifyEmailBody, ResendVerificationBody } from '../types/auth.types';
 
 // ─── REGISTER ─────────────────────────────────────────────────
 export const register = async (
@@ -13,7 +13,45 @@ export const register = async (
   try {
     const body = req.body as RegisterBody;
     const result = await registerUser(body);
-    sendSuccess(res, result, 'Account created successfully', 201);
+    sendSuccess(res, result, 'Account created successfully. Please verify your email.', 201);
+  } catch (error) {
+    if (error instanceof AppError) {
+      sendError(res, error.message, error.statusCode);
+    } else {
+      next(error);
+    }
+  }
+};
+
+// ─── VERIFY EMAIL ────────────────────────────────────────────
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const body = req.body as VerifyEmailBody;
+    const result = await verifyEmailAddress(body.token);
+    sendSuccess(res, result, 'Email verified successfully');
+  } catch (error) {
+    if (error instanceof AppError) {
+      sendError(res, error.message, error.statusCode);
+    } else {
+      next(error);
+    }
+  }
+};
+
+// ─── RESEND VERIFICATION EMAIL ───────────────────────────────
+export const resendVerification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const body = req.body as ResendVerificationBody;
+    await resendVerificationEmail(body.email);
+    sendSuccess(res, null, 'Verification email sent');
   } catch (error) {
     if (error instanceof AppError) {
       sendError(res, error.message, error.statusCode);

@@ -8,6 +8,8 @@ export interface User {
   is_active: boolean;
   google_id?: string | null;
   email_verified?: boolean;
+  email_verification_token_hash?: string | null;
+  email_verification_expires_at?: Date | string | null;
   created_at: Date | string;
   updated_at: Date | string;
 }
@@ -32,6 +34,18 @@ export interface RegisterBody {
   // mentor only
   specialization?: string;
   qualifications?: string;
+}
+
+export interface RegisterResponse {
+  user: SafeUser;
+}
+
+export interface VerifyEmailBody {
+  token: string;
+}
+
+export interface ResendVerificationBody {
+  email: string;
 }
 
 // Login request body shape
