@@ -4,6 +4,8 @@ import {
   findCourseWithLessons,
   listCourses,
   listAllCourses,
+  listMentorCourses,
+  listCoursesByCreator,
   updateCourse,
   togglePublish,
   deleteCourse,
@@ -74,6 +76,11 @@ export const listCoursesService = async (
   // Admins see all courses including unpublished
   if (user?.role === 'administrator') {
     return listAllCourses(page, limit, query.search);
+  }
+
+  // Mentors can browse published courses plus their own drafts
+  if (user?.role === 'mentor') {
+    return listMentorCourses(user.user_id, page, limit, query.search);
   }
 
   return listCourses(page, limit, query.search);

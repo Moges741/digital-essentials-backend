@@ -149,6 +149,104 @@ export const listAllCourses = async (
   };
 };
 
+// ─── List courses created by one mentor ───────────────
+export const listCoursesByCreator = async (
+  creator_id: number,
+  page: number,
+  limit: number,
+  search?: string
+): Promise<PaginatedCourses> => {
+
+  const offset = (page - 1) * limit;
+
+  const baseQuery = db('courses')
+    .join('users', 'courses.created_by', 'users.user_id')
+    .where('courses.created_by', creator_id);
+
+  if (search) {
+    baseQuery.where((qb) => {
+      qb.whereILike('courses.title', `%${search}%`)
+        .orWhereILike('courses.description', `%${search}%`);
+    });
+  }
+
+  const [{ count }] = await baseQuery
+    .clone()
+    .count('courses.course_id as count');
+
+  const total = Number(count);
+
+  const courses = await baseQuery
+    .clone()
+    .select(
+      'courses.*',
+      'users.name as creator_name',
+      'users.role as creator_role'
+    )
+    .orderBy('courses.created_at', 'desc')
+    .limit(limit)
+    .offset(offset);
+
+  return {
+    courses,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+};
+
+// ─── List courses visible to mentors ───────────────
+// Mentors can browse published courses from others, but also see their own drafts.
+export const listMentorCourses = async (
+  creator_id: number,
+  page: number,
+  limit: number,
+  search?: string
+): Promise<PaginatedCourses> => {
+
+  const offset = (page - 1) * limit;
+
+  const baseQuery = db('courses')
+    .join('users', 'courses.created_by', 'users.user_id')
+    .where((qb) => {
+      qb.where('courses.is_published', true)
+        .orWhere('courses.created_by', creator_id);
+    });
+
+  if (search) {
+    baseQuery.where((qb) => {
+      qb.whereILike('courses.title', `%${search}%`)
+        .orWhereILike('courses.description', `%${search}%`);
+    });
+  }
+
+  const [{ count }] = await baseQuery
+    .clone()
+    .count('courses.course_id as count');
+
+  const total = Number(count);
+
+  const courses = await baseQuery
+    .clone()
+    .select(
+      'courses.*',
+      'users.name as creator_name',
+      'users.role as creator_role'
+    )
+    .orderBy('courses.created_at', 'desc')
+    .limit(limit)
+    .offset(offset);
+
+  return {
+    courses,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+};
+
 // ─── Update course ─────────────────
 export const updateCourse = async (
   course_id: number,

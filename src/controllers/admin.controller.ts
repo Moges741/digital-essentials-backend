@@ -6,6 +6,91 @@ import { CourseWithCreator } from '../types/course.types';
 import { listAllFeedbackService } from '../services/feedback.service';
 import { AppError } from '../utils/errors';
 
+// ─── Get all mentors with profiles (admin only) ──────────────
+export const getAllMentors = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const mentors = await db('users')
+      .join('mentor_profiles', 'users.user_id', 'mentor_profiles.user_id')
+      .select(
+        'users.user_id',
+        'users.name',
+        'users.email',
+        'users.is_active',
+        'users.created_at',
+        'users.updated_at',
+        'mentor_profiles.specialization',
+        'mentor_profiles.qualifications'
+      )
+      .where('users.role', 'mentor')
+      .orderBy('users.created_at', 'desc');
+
+    sendSuccess(res, { mentors }, 'Mentors retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── Update mentor profile (admin only) ──────────────────────
+export const updateMentorProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { user_id } = req.params;
+    const { specialization, qualifications } = req.body;
+
+    if (!specialization || specialization.trim() === '') {
+      sendError(res, 'Specialization is required', 400);
+      return;
+    }
+
+    const userId = Array.isArray(user_id) ? user_id[0] : user_id;
+    const parsedUserId = parseInt(userId);
+
+    // Verify user exists and is a mentor
+    const mentor = await db('users')
+      .where({ user_id: parsedUserId, role: 'mentor' })
+      .first();
+
+    if (!mentor) {
+      sendError(res, 'Mentor not found', 404);
+      return;
+    }
+
+    // Update mentor profile
+    await db('mentor_profiles')
+      .where({ user_id: parsedUserId })
+      .update({
+        specialization: specialization.trim(),
+        qualifications: qualifications?.trim() || null,
+      });
+
+    const updated = await db('users')
+      .join('mentor_profiles', 'users.user_id', 'mentor_profiles.user_id')
+      .select(
+        'users.user_id',
+        'users.name',
+        'users.email',
+        'users.is_active',
+        'users.created_at',
+        'users.updated_at',
+        'mentor_profiles.specialization',
+        'mentor_profiles.qualifications'
+      )
+      .where('users.user_id', parsedUserId)
+      .first();
+
+    sendSuccess(res, { mentor: updated }, 'Mentor profile updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ─── Get all users (admin only) ──────────────────────────────
 export const getAllUsers = async (
   req: Request,

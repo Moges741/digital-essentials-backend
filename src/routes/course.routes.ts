@@ -9,12 +9,13 @@ import {
   deleteCourseController,
 } from '../controllers/course.controller';
 import { authenticate, authorizeRoles } from '../middleware/auth.middleware';
+import { optionalAuthenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
 
 const router = Router();
 
 // ── GET /api/courses ───────────
-router.get('/', listCoursesController);
+router.get('/', optionalAuthenticate, listCoursesController);
 
 // ── GET /api/courses/:course_id ─────────
 router.get(
