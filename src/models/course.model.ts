@@ -17,6 +17,7 @@ export const createCourse = async (
     title:         data.title,
     description:   data.description,
     duration_mins: data.duration_mins ?? 0,
+    category:      data.category ?? 'Basics',
     created_by,
     is_published:  true, 
   });

@@ -1,9 +1,12 @@
 
+export type CourseCategory = 'Basics' | 'Intermediate' | 'Advanced';
+
 export interface Course {
   course_id: number;
   title: string;
   description: string;
   duration_mins: number;
+  category: CourseCategory;
   created_by: number;
   is_published: boolean;
   created_at: Date;
@@ -27,12 +30,14 @@ export interface CreateCourseBody {
   title: string;
   description: string;
   duration_mins?: number;
+  category?: CourseCategory;
 }
 
 export interface UpdateCourseBody {
   title?: string;
   description?: string;
   duration_mins?: number;
+  category?: CourseCategory;
 }
 
 export interface CourseQueryParams {
