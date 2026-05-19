@@ -6,6 +6,9 @@ import multer from 'multer';
 
 const ALLOWED_MIME_TYPES = [
   'application/pdf',                // PDF
+  'image/jpeg',                     // JPG/JPEG
+  'image/png',                      // PNG
+  'image/webp',                     // WEBP
   'audio/mpeg',                     // MP3
   'audio/mp4',                      // M4A
   'audio/wav',                      // WAV
@@ -27,7 +30,7 @@ export const upload = multer({
       cb(null, true);
     } else {
       cb(new Error(
-        `File type not allowed. Allowed types: PDF, MP3, WAV, MP4, MOV, DOCX`
+        `File type not allowed. Allowed types: PDF, JPG, PNG, WEBP, MP3, WAV, MP4, MOV, DOCX`
       ));
     }
   },
