@@ -18,6 +18,8 @@ export const createCourse = async (
     description:   data.description,
     duration_mins: data.duration_mins ?? 0,
     category:      data.category ?? 'Basics',
+    topic:         data.topic ?? 'Software Development & Coding',
+    target_roles:  JSON.stringify(data.target_roles ?? ['student']),
     created_by,
     is_published:  true, 
   });

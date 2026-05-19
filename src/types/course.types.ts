@@ -1,12 +1,26 @@
 
 export type CourseCategory = 'Basics' | 'Intermediate' | 'Advanced';
 
+export type CourseTopic = 
+  | 'AI'
+  | 'IoT'
+  | 'Cloud Computing'
+  | 'Cyber Security'
+  | 'Safety Issue'
+  | 'Software Development & Coding'
+  | 'Digital Marketing'
+  | 'E-Commerce';
+
+export type TargetRole = 'teacher' | 'doctor' | 'student' | 'farmer' | 'merchant' | 'professional' | 'general';
+
 export interface Course {
   course_id: number;
   title: string;
   description: string;
   duration_mins: number;
   category: CourseCategory;
+  topic: CourseTopic;
+  target_roles: TargetRole[];
   created_by: number;
   is_published: boolean;
   created_at: Date;
@@ -31,6 +45,8 @@ export interface CreateCourseBody {
   description: string;
   duration_mins?: number;
   category?: CourseCategory;
+  topic?: CourseTopic;
+  target_roles?: TargetRole[];
 }
 
 export interface UpdateCourseBody {
@@ -38,6 +54,8 @@ export interface UpdateCourseBody {
   description?: string;
   duration_mins?: number;
   category?: CourseCategory;
+  topic?: CourseTopic;
+  target_roles?: TargetRole[];
 }
 
 export interface CourseQueryParams {
